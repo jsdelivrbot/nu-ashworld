@@ -11,4 +11,4 @@ $ google-chrome http://localhost:4444
 
 The server is currently not persisted to a database; it runs in-memory.
 
-There is currently no hot reloading and if you really wanted, you could see the server code from the client endpoint. Also there's no login/authentication right now. 🤷
+There is currently no hot reloading and if you really wanted, you could see the server code from the client endpoint. Also there's no login/authentication right now. :poop:
