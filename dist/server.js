@@ -1,12 +1,9 @@
 const http = require('http');
-const pg = require('pg-promise')();
 const Elm = require('./elm-server.js').Elm;
 
-const dbConnectionString = 'postgres://postgres@localhost:5432/ashworld';
 const port = 3333;
 
 const app = Elm.Server.Main.init();
-const db = pg(dbConnectionString); // hopefully not needed for now, we're in-memory
 
 app.ports.log.subscribe(msg => {
   console.log(`[ELM ] ${msg}`);
