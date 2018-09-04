@@ -135,10 +135,6 @@ ecc-jsbn@~0.1.1:
     jsbn "~0.1.0"
     safer-buffer "^2.1.0"
 
-elchemy@^0.7.4:
-  version "0.7.4"
-  resolved "https://registry.yarnpkg.com/elchemy/-/elchemy-0.7.4.tgz#c23072b3b7aaa9e0ab54db3d2aefc40799dc0318"
-
 elm-format@^0.8.0:
   version "0.8.0"
   resolved "https://registry.yarnpkg.com/elm-format/-/elm-format-0.8.0.tgz#f0d59efd0414c081d3759c35e52d466cc5f7d62c"
