@@ -8,7 +8,6 @@ import Url.Parser exposing ((</>), Parser)
 type Route
     = NotFound
     | Signup
-    | Login Int
 
 
 fromString : String -> Route
@@ -31,23 +30,14 @@ toString route =
         Signup ->
             Url.Builder.absolute [ "signup" ] []
 
-        Login userId ->
-            Url.Builder.absolute [ "login", String.fromInt userId ] []
-
 
 parser : Parser (Route -> a) a
 parser =
     Url.Parser.oneOf
         [ Url.Parser.map Signup signup
-        , Url.Parser.map Login login
         ]
 
 
 signup : Parser a a
 signup =
     Url.Parser.s "signup"
-
-
-login : Parser (Int -> a) a
-login =
-    Url.Parser.s "login" </> Url.Parser.int

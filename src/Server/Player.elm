@@ -1,9 +1,9 @@
-module Client.Player exposing (Player)
+module Server.Player exposing (Player)
 
 
 type alias Player =
     { hp : Int
     , maxHp : Int
     , xp : Int
-    , id : Int
+    , secret : ()
     }

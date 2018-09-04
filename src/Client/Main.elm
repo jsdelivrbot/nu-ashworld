@@ -8,6 +8,7 @@ import Html.Events as HE
 import Http
 import Json.Decode as JD exposing (Decoder)
 import Server.Route exposing (toString)
+import Shared.Player
 import Url exposing (Url)
 
 
@@ -32,8 +33,7 @@ type Msg
     | UrlRequested Browser.UrlRequest
     | UrlChanged Url
     | Request Server.Route.Route
-    | GetSignupResponse (Result Http.Error String)
-    | GetLoginResponse (Result Http.Error String)
+    | GetSignupResponse (Result Http.Error Player)
 
 
 main : Program Flags Model Msg
@@ -78,21 +78,26 @@ update msg model =
 
         Request route ->
             ( model
-            , Http.getString (serverEndpoint ++ Server.Route.toString route)
-                |> Http.send (tagger route)
+            , sendRequest route
             )
 
         GetSignupResponse response ->
-            ( model
-                |> addMessage ("Got Signup response: " ++ Result.withDefault "error" response)
+            ( case response of
+                Err _ ->
+                    model
+                        |> addMessage "Got bad Signup response! :("
+
+                Ok player ->
+                    model
+                        |> addMessage ("Got Signup response! Player ID " ++ String.fromInt player.id)
+                        |> setPlayer player
             , Cmd.none
             )
 
-        GetLoginResponse response ->
-            ( model
-                |> addMessage ("Got Login response: " ++ Result.withDefault "error" response)
-            , Cmd.none
-            )
+
+setPlayer : Player -> Model -> Model
+setPlayer player model =
+    { model | player = Just player }
 
 
 addMessage : String -> Model -> Model
@@ -100,17 +105,24 @@ addMessage message model =
     { model | messages = message :: model.messages }
 
 
-tagger : Server.Route.Route -> (Result Http.Error String -> Msg)
-tagger route =
+sendRequest : Server.Route.Route -> Cmd Msg
+sendRequest route =
+    let
+        send : (Result Http.Error a -> Msg) -> Decoder a -> Cmd Msg
+        send tagger decoder =
+            Http.get (serverEndpoint ++ Server.Route.toString route) decoder
+                |> Http.send tagger
+    in
     case route of
         Server.Route.NotFound ->
-            always NoOp
+            send
+                (always NoOp)
+                (JD.succeed ())
 
         Server.Route.Signup ->
-            GetSignupResponse
-
-        Server.Route.Login userId ->
-            GetLoginResponse
+            send
+                GetSignupResponse
+                (JD.field "player" Shared.Player.decoder)
 
 
 subscriptions : Model -> Sub Msg
@@ -122,8 +134,8 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Ashworld"
     , body =
-        [ viewMessages model.messages
-        , viewButtons
+        [ viewButtons
+        , viewMessages model.messages
         , model.player
             |> Maybe.map viewPlayer
             |> Maybe.withDefault viewNoPlayer
@@ -150,9 +162,6 @@ viewButtons =
         [ H.button
             [ HE.onClick (Request Server.Route.Signup) ]
             [ H.text "Signup" ]
-        , H.button
-            [ HE.onClick (Request (Server.Route.Login 1)) ]
-            [ H.text "Login 1" ]
         ]
 
 
@@ -160,6 +169,14 @@ viewPlayer : Player -> Html Msg
 viewPlayer player =
     H.table []
         [ H.tr []
+            [ H.th [] []
+            , H.th [] [ H.text "PLAYER STATS" ]
+            ]
+        , H.tr []
+            [ H.th [] [ H.text "ID" ]
+            , H.td [] [ H.text (String.fromInt player.id) ]
+            ]
+        , H.tr []
             [ H.th [] [ H.text "HP" ]
             , H.td [] [ H.text (String.fromInt player.hp ++ "/" ++ String.fromInt player.maxHp) ]
             ]

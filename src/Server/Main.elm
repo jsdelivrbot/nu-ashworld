@@ -3,7 +3,9 @@ port module Server.Main exposing (main)
 import Dict exposing (Dict)
 import Json.Encode as JE
 import Platform
+import Server.Player exposing (Player)
 import Server.Route exposing (Route(..))
+import Shared.Player
 
 
 -- GENERAL
@@ -27,19 +29,7 @@ type alias Flags =
 
 
 type alias Model =
-    { players : Dict PlayerId Player
-    }
-
-
-type alias PlayerId =
-    Int
-
-
-type alias Player =
-    { hp : Int
-    , maxHp : Int
-    , xp : Int
-    , secret : ()
+    { players : Dict Int Player
     }
 
 
@@ -71,27 +61,60 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         UrlRequested (Url url) ->
-            ( model
-            , Cmd.batch
-                [ log ("UrlRequested " ++ url)
-                , httpResponse <|
-                    case Server.Route.fromString url of
-                        NotFound ->
-                            JE.object [ ( "route", JE.string "NotFound" ) ]
-                                |> JE.encode 0
+            case Server.Route.fromString url of
+                NotFound ->
+                    ( model
+                    , Cmd.batch
+                        [ log ("NotFound: " ++ url)
+                        , JE.object
+                            [ ( "success", JE.bool False )
+                            , ( "error", JE.string ("Route \"" ++ url ++ "\" not found.") )
+                            ]
+                            |> JE.encode 0
+                            |> httpResponse
+                        ]
+                    )
 
-                        Signup ->
-                            JE.object [ ( "route", JE.string "Signup" ) ]
-                                |> JE.encode 0
+                Signup ->
+                    let
+                        newId : Int
+                        newId =
+                            Dict.size model.players
 
-                        Login playerId ->
-                            JE.object
-                                [ ( "route", JE.string "Login" )
-                                , ( "playerId", JE.int playerId )
-                                ]
-                                |> JE.encode 0
-                ]
-            )
+                        newPlayer : Player
+                        newPlayer =
+                            initPlayer
+                    in
+                    ( model
+                        |> addPlayer newId newPlayer
+                    , Cmd.batch
+                        [ log ("Signup: registered new player " ++ String.fromInt newId)
+                        , JE.object
+                            [ ( "success", JE.bool True )
+                            , ( "player", Shared.Player.encode newId newPlayer )
+                            ]
+                            |> JE.encode 0
+                            |> httpResponse
+                        ]
+                    )
+
+
+addPlayer : Int -> Player -> Model -> Model
+addPlayer id player model =
+    { model
+        | players =
+            model.players
+                |> Dict.insert id player
+    }
+
+
+initPlayer : Player
+initPlayer =
+    { hp = 10
+    , maxHp = 10
+    , xp = 0
+    , secret = ()
+    }
 
 
 subscriptions : Model -> Sub Msg
