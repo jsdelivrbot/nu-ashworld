@@ -6,7 +6,7 @@ const dbConnectionString = 'postgres://postgres@localhost:5432/ashworld';
 const port = 3333;
 
 const app = Elm.Server.Main.init();
-const db = pg(dbConnectionString);
+const db = pg(dbConnectionString); // hopefully not needed for now, we're in-memory
 
 app.ports.log.subscribe(msg => {
   console.log(`[ELM ] ${msg}`);
@@ -21,13 +21,16 @@ http.createServer(function (req, res) {
         app.ports.httpResponse.subscribe(handler);
     })
     .then(obj => {
-        res.writeHead(200, {'Content-Type': 'application/json'});
+        res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+        });
         res.write(obj.response);
         res.end();
         app.ports.httpResponse.unsubscribe(obj.handler);
     })
 
-    app.ports.httpRequests.send(req.url);
+    app.ports.httpRequests.send(`http://localhost:${port}${req.url}`);
 
 }).listen(port);
 

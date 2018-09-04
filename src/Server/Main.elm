@@ -1,6 +1,9 @@
 port module Server.Main exposing (main)
 
+import Dict exposing (Dict)
+import Json.Encode as JE
 import Platform
+import Server.Route exposing (Route(..))
 
 
 -- GENERAL
@@ -24,7 +27,18 @@ type alias Flags =
 
 
 type alias Model =
-    ()
+    { players : Dict PlayerId Player
+    }
+
+
+type alias PlayerId =
+    Int
+
+
+type alias Player =
+    { hp : Int
+    , xp : Int
+    }
 
 
 type Url
@@ -46,7 +60,9 @@ main =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( (), Cmd.none )
+    ( { players = Dict.empty }
+    , Cmd.none
+    )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -56,7 +72,22 @@ update msg model =
             ( model
             , Cmd.batch
                 [ log ("UrlRequested " ++ url)
-                , httpResponse "{}"
+                , httpResponse <|
+                    case Server.Route.fromString url of
+                        NotFound ->
+                            JE.object [ ( "route", JE.string "NotFound" ) ]
+                                |> JE.encode 0
+
+                        Signup ->
+                            JE.object [ ( "route", JE.string "Signup" ) ]
+                                |> JE.encode 0
+
+                        Login playerId ->
+                            JE.object
+                                [ ( "route", JE.string "Login" )
+                                , ( "playerId", JE.int playerId )
+                                ]
+                                |> JE.encode 0
                 ]
             )
 
