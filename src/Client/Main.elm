@@ -2,6 +2,7 @@ module Client.Main exposing (main)
 
 import Browser
 import Browser.Navigation
+import Client.Player exposing (Player)
 import Html as H exposing (Html)
 import Html.Events as HE
 import Http
@@ -21,15 +22,16 @@ type alias Flags =
 
 type alias Model =
     { navigationKey : Browser.Navigation.Key
-    , message : String
+    , messages : List String
+    , player : Maybe Player
     }
 
 
 type Msg
-    = UrlRequested Browser.UrlRequest
+    = NoOp
+    | UrlRequested Browser.UrlRequest
     | UrlChanged Url
     | Request Server.Route.Route
-    | GetNotFoundResponse (Result Http.Error String)
     | GetSignupResponse (Result Http.Error String)
     | GetLoginResponse (Result Http.Error String)
 
@@ -49,7 +51,8 @@ main =
 init : Flags -> Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
 init flags url key =
     ( { navigationKey = key
-      , message = "Init successful!"
+      , messages = [ "Init successful!" ]
+      , player = Nothing
       }
     , Cmd.none
     )
@@ -58,11 +61,20 @@ init flags url key =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        UrlRequested _ ->
+        NoOp ->
             ( model, Cmd.none )
 
+        UrlRequested _ ->
+            ( model
+                |> addMessage "UrlRequested TODO"
+            , Cmd.none
+            )
+
         UrlChanged _ ->
-            ( model, Cmd.none )
+            ( model
+                |> addMessage "UrlChanged TODO"
+            , Cmd.none
+            )
 
         Request route ->
             ( model
@@ -70,27 +82,29 @@ update msg model =
                 |> Http.send (tagger route)
             )
 
-        GetNotFoundResponse response ->
-            ( { model | message = "Got NotFound response: " ++ Result.withDefault "error" response }
-            , Cmd.none
-            )
-
         GetSignupResponse response ->
-            ( { model | message = "Got Signup response: " ++ Result.withDefault "error" response }
+            ( model
+                |> addMessage ("Got Signup response: " ++ Result.withDefault "error" response)
             , Cmd.none
             )
 
         GetLoginResponse response ->
-            ( { model | message = "Got Login response: " ++ Result.withDefault "error" response }
+            ( model
+                |> addMessage ("Got Login response: " ++ Result.withDefault "error" response)
             , Cmd.none
             )
+
+
+addMessage : String -> Model -> Model
+addMessage message model =
+    { model | messages = message :: model.messages }
 
 
 tagger : Server.Route.Route -> (Result Http.Error String -> Msg)
 tagger route =
     case route of
         Server.Route.NotFound ->
-            GetNotFoundResponse
+            always NoOp
 
         Server.Route.Signup ->
             GetSignupResponse
@@ -108,16 +122,54 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Ashworld"
     , body =
-        [ H.text "Last message:"
-        , H.strong [] [ H.text model.message ]
-        , H.button
-            [ HE.onClick (Request Server.Route.NotFound) ]
-            [ H.text "NotFound" ]
-        , H.button
+        [ viewMessages model.messages
+        , viewButtons
+        , model.player
+            |> Maybe.map viewPlayer
+            |> Maybe.withDefault viewNoPlayer
+        ]
+    }
+
+
+viewMessages : List String -> Html Msg
+viewMessages messages =
+    H.div []
+        [ H.strong [] [ H.text "Messages:" ]
+        , H.ul [] (List.map viewMessage messages)
+        ]
+
+
+viewMessage : String -> Html Msg
+viewMessage message =
+    H.li [] [ H.text message ]
+
+
+viewButtons : Html Msg
+viewButtons =
+    H.div []
+        [ H.button
             [ HE.onClick (Request Server.Route.Signup) ]
             [ H.text "Signup" ]
         , H.button
             [ HE.onClick (Request (Server.Route.Login 1)) ]
             [ H.text "Login 1" ]
         ]
-    }
+
+
+viewPlayer : Player -> Html Msg
+viewPlayer player =
+    H.table []
+        [ H.tr []
+            [ H.th [] [ H.text "HP" ]
+            , H.td [] [ H.text (String.fromInt player.hp ++ "/" ++ String.fromInt player.maxHp) ]
+            ]
+        , H.tr []
+            [ H.th [] [ H.text "XP" ]
+            , H.td [] [ H.text (String.fromInt player.xp) ]
+            ]
+        ]
+
+
+viewNoPlayer : Html Msg
+viewNoPlayer =
+    H.div [] [ H.text "No player :(" ]

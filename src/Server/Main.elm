@@ -37,7 +37,9 @@ type alias PlayerId =
 
 type alias Player =
     { hp : Int
+    , maxHp : Int
     , xp : Int
+    , secret : ()
     }
 
 
