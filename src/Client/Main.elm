@@ -132,7 +132,7 @@ subscriptions model =
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = "Ashworld"
+    { title = "NuAshworld"
     , body =
         [ viewButtons
         , viewMessages model.messages
