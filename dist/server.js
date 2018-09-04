@@ -1,10 +1,15 @@
 const http = require('http');
+const pg = require('pg-promise')();
 const Elm = require('./elm-server.js').Elm;
-const app = Elm.Server.Main.init();
+
+const dbConnectionString = 'postgres://postgres@localhost:5432/ashworld';
 const port = 3333;
 
+const app = Elm.Server.Main.init();
+const db = pg(dbConnectionString);
+
 app.ports.log.subscribe(msg => {
-  console.log(msg);
+  console.log(`[ELM ] ${msg}`);
 });
 
 http.createServer(function (req, res) {
@@ -26,5 +31,4 @@ http.createServer(function (req, res) {
 
 }).listen(port);
 
-console.log(`Elm server started on port ${port}`);
-
+console.log(`[NODE] Server started on port ${port}`);
