@@ -2,7 +2,11 @@
   "scripts": {
     "build:client": "elm make --optimize client/src/Main.elm",
     "build:client:debug": "elm make --debug client/src/Main.elm",
-    "format": "elm-format --yes client"
+    "build:server": "elm make --optimize server/src/Main.elm",
+    "build:server:debug": "elm make --debug server/src/Main.elm",
+    "build": "yarn build:client && yarn build:server",
+    "build:debug": "yarn build:client:debug && yarn build:server:debug",
+    "format": "elm-format --yes client server shared"
   },
   "devDependencies": {
     "elm": "^0.19.0-bugfix2",
