@@ -1,6 +1,22 @@
-module Server.Main exposing (main)
+port module Server.Main exposing (main)
 
 import Platform
+
+
+-- GENERAL
+
+
+port log : String -> Cmd msg
+
+
+
+-- HTTP
+
+
+port httpRequests : (String -> msg) -> Sub msg
+
+
+port httpResponse : String -> Cmd msg
 
 
 type alias Flags =
@@ -11,8 +27,12 @@ type alias Model =
     ()
 
 
-type alias Msg =
-    ()
+type Url
+    = Url String
+
+
+type Msg
+    = UrlRequested Url
 
 
 main : Program Flags Model Msg
@@ -31,9 +51,16 @@ init flags =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( (), Cmd.none )
+    case msg of
+        UrlRequested (Url url) ->
+            ( model
+            , Cmd.batch
+                [ log ("UrlRequested " ++ url)
+                , httpResponse "{}"
+                ]
+            )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    httpRequests (Url >> UrlRequested)
