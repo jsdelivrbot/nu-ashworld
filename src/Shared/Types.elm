@@ -1,4 +1,4 @@
-module Shared.Types exposing (..)
+module Shared.Types exposing (Player)
 
 
 type alias Player =

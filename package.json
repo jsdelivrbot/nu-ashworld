@@ -1,15 +1,18 @@
 {
+  "license": "UNLICENSED",
   "scripts": {
-    "build:client": "elm make --optimize client/src/Main.elm",
-    "build:client:debug": "elm make --debug client/src/Main.elm",
-    "build:server": "elm make --optimize server/src/Main.elm",
-    "build:server:debug": "elm make --debug server/src/Main.elm",
+    "build:client": "elm make --optimize src/Client/Main.elm --output dist/elm-client.js",
+    "build:client:debug": "elm make --debug src/Client/Main.elm --output dist/elm-client.js",
+    "build:server": "elm make --optimize src/Server/Main.elm --output dist/elm-server.js",
+    "build:server:debug": "elm make --debug src/Server/Main.elm --output dist/elm-server.js",
     "build": "yarn build:client && yarn build:server",
     "build:debug": "yarn build:client:debug && yarn build:server:debug",
-    "format": "elm-format --yes client server shared"
+    "format": "elm-format --yes src",
+    "start:client": "cd dist && http-server"
   },
   "devDependencies": {
     "elm": "^0.19.0-bugfix2",
-    "elm-format": "^0.8.0"
+    "elm-format": "^0.8.0",
+    "http-server": "^0.11.1"
   }
 }

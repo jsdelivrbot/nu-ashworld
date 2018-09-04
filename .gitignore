@@ -1,2 +1,4 @@
 node_modules/
 elm-stuff/
+dist/elm-client.js
+dist/elm-server.js
