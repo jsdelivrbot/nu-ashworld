@@ -3,6 +3,7 @@ module Client.Main exposing (main)
 import Browser
 import Browser.Navigation
 import Html as H exposing (Attribute, Html)
+import Html.Attributes as HA
 import Html.Events as HE
 import Http
 import Json.Decode as JD exposing (Decoder)
@@ -133,7 +134,7 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "NuAshworld"
     , body =
-        [ viewButtons
+        [ viewButtons model.player
         , viewMessages model.messages
         , model.player
             |> Maybe.map viewPlayer
@@ -155,11 +156,15 @@ viewMessage message =
     H.li [] [ H.text message ]
 
 
-viewButtons : Html Msg
-viewButtons =
+viewButtons : Maybe ClientPlayer -> Html Msg
+viewButtons player =
     H.div []
         [ H.button
-            [ onClickRequest Server.Route.Signup ]
+            [ if player == Nothing then
+                onClickRequest Server.Route.Signup
+              else
+                HA.disabled True
+            ]
             [ H.text "Signup" ]
         ]
 
