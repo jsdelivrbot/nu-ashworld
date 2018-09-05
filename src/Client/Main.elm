@@ -8,7 +8,13 @@ import Html.Events as HE
 import Http
 import Json.Decode as JD exposing (Decoder)
 import RemoteData exposing (RemoteData(..), WebData)
-import Server.Route exposing (AttackResponse, SignupResponse, toString)
+import Server.Route
+    exposing
+        ( AttackResponse
+        , LoginResponse
+        , SignupResponse
+        , toString
+        )
 import Shared.Fight exposing (Fight, FightResult(..))
 import Shared.Player exposing (ClientOtherPlayer, ClientPlayer, PlayerId)
 import Shared.World exposing (ClientWorld)
@@ -38,6 +44,7 @@ type Msg
     | UrlChanged Url
     | Request Server.Route.Route
     | GetSignupResponse (WebData SignupResponse)
+    | GetLoginResponse (WebData LoginResponse)
     | GetAttackResponse (WebData AttackResponse)
 
 
@@ -93,6 +100,12 @@ update msg model =
             , sendRequest route
             )
 
+        Request ((Server.Route.Login playerId) as route) ->
+            ( model
+                |> setWorldAsLoading
+            , sendRequest route
+            )
+
         Request ((Server.Route.Attack otherPlayerId) as route) ->
             ( model
                 |> setWorldAsLoading
@@ -103,6 +116,13 @@ update msg model =
         GetSignupResponse response ->
             ( model
                 |> addMessage "Got Signup response!"
+                |> updateWorld response
+            , Cmd.none
+            )
+
+        GetLoginResponse response ->
+            ( model
+                |> addMessage "Got Login response!"
                 |> updateWorld response
             , Cmd.none
             )
@@ -171,6 +191,13 @@ sendRequest route =
                     (JD.field "world" Shared.World.decoder)
                 )
 
+        Server.Route.Login playerId ->
+            send
+                GetLoginResponse
+                (JD.map LoginResponse
+                    (JD.field "world" Shared.World.decoder)
+                )
+
         Server.Route.Attack playerId ->
             send
                 GetAttackResponse
@@ -220,6 +247,12 @@ viewButtons world =
                 HA.disabled True
             ]
             [ H.text "Signup" ]
+        , H.button
+            [ onClickRequest (Server.Route.Login (Shared.Player.id 0)) ]
+            [ H.text "Login 0" ]
+        , H.button
+            [ onClickRequest (Server.Route.Login (Shared.Player.id 1)) ]
+            [ H.text "Login 1" ]
         ]
 
 

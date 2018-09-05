@@ -17,4 +17,4 @@ There is currently no hot reloading and if you really wanted, you could see the 
 
 ## Next step:
 
-Login as an existing player, refresh the world data. Investigate bidirectional websockets in 0.19 or HTTP push or something.
+Refresh the world data. Investigate bidirectional websockets in 0.19 or HTTP push or something.

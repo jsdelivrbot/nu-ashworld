@@ -102,6 +102,22 @@ update msg model =
                         ]
                     )
 
+                Login playerId ->
+                    ( model
+                    , Cmd.batch
+                        (case Dict.get playerId model.world.players of
+                            Just player ->
+                                [ log ("Login: successful as #" ++ Shared.Player.idToString playerId)
+                                , sendHttpResponse (Server.Route.encodeLoginSuccess playerId model.world)
+                                ]
+
+                            Nothing ->
+                                [ log ("Login: unsuccessful as #" ++ Shared.Player.idToString playerId)
+                                , sendHttpResponse Server.Route.encodeLoginFailure
+                                ]
+                        )
+                    )
+
                 Attack { you, them } ->
                     let
                         fight : Fight

@@ -1,9 +1,12 @@
 module Server.Route
     exposing
         ( AttackResponse
+        , LoginResponse
         , Route(..)
         , SignupResponse
         , encodeAttackSuccess
+        , encodeLoginFailure
+        , encodeLoginSuccess
         , encodeNotFound
         , encodeSignupSuccess
         , fromString
@@ -22,6 +25,7 @@ import Url.Parser exposing ((</>), Parser)
 type Route
     = NotFound
     | Signup
+    | Login PlayerId
     | Attack
         { you : PlayerId
         , them : PlayerId
@@ -29,6 +33,11 @@ type Route
 
 
 type alias SignupResponse =
+    { world : ClientWorld
+    }
+
+
+type alias LoginResponse =
     { world : ClientWorld
     }
 
@@ -59,6 +68,13 @@ toString route =
         Signup ->
             Url.Builder.absolute [ "signup" ] []
 
+        Login id ->
+            Url.Builder.absolute
+                [ "login"
+                , Shared.Player.idToString id
+                ]
+                []
+
         Attack { you, them } ->
             Url.Builder.absolute
                 [ "attack"
@@ -73,12 +89,18 @@ parser =
     Url.Parser.oneOf
         [ Url.Parser.map Signup signup
         , Url.Parser.map (\you them -> Attack { you = you, them = them }) attack
+        , Url.Parser.map Login login
         ]
 
 
 signup : Parser a a
 signup =
     Url.Parser.s "signup"
+
+
+login : Parser (PlayerId -> a) a
+login =
+    Url.Parser.s "login" </> playerId
 
 
 playerId : Parser (PlayerId -> a) a
@@ -105,6 +127,22 @@ encodeSignupSuccess playerId_ world =
     JE.object
         [ ( "success", JE.bool True )
         , ( "world", Shared.World.encodeMaybe (Shared.World.serverToClient playerId_ world) )
+        ]
+
+
+encodeLoginSuccess : PlayerId -> ServerWorld -> JE.Value
+encodeLoginSuccess playerId_ world =
+    JE.object
+        [ ( "success", JE.bool True )
+        , ( "world", Shared.World.encodeMaybe (Shared.World.serverToClient playerId_ world) )
+        ]
+
+
+encodeLoginFailure : JE.Value
+encodeLoginFailure =
+    JE.object
+        [ ( "success", JE.bool False )
+        , ( "error", JE.string "Couldn't find user" )
         ]
 
 
