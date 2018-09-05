@@ -1,13 +1,16 @@
 module Shared.Player
     exposing
-        ( ClientPlayer
+        ( ClientOtherPlayer
+        , ClientPlayer
         , PlayerId
         , ServerPlayer
         , decoder
         , encode
+        , encodeOtherPlayer
         , id
         , idToInt
         , init
+        , otherPlayerDecoder
         )
 
 import Json.Decode as JD exposing (Decoder)
@@ -31,6 +34,13 @@ idToInt (PlayerId num) =
 type alias ClientPlayer =
     { hp : Int
     , maxHp : Int
+    , xp : Int
+    , id : PlayerId
+    }
+
+
+type alias ClientOtherPlayer =
+    { hp : Int
     , xp : Int
     , id : PlayerId
     }
@@ -68,5 +78,22 @@ decoder =
     JD.map4 ClientPlayer
         (JD.field "hp" JD.int)
         (JD.field "maxHp" JD.int)
+        (JD.field "xp" JD.int)
+        (JD.field "id" (JD.int |> JD.map PlayerId))
+
+
+encodeOtherPlayer : PlayerId -> ServerPlayer -> JE.Value
+encodeOtherPlayer (PlayerId playerId) player =
+    JE.object
+        [ ( "hp", JE.int player.hp )
+        , ( "xp", JE.int player.xp )
+        , ( "id", JE.int playerId )
+        ]
+
+
+otherPlayerDecoder : Decoder ClientOtherPlayer
+otherPlayerDecoder =
+    JD.map3 ClientOtherPlayer
+        (JD.field "hp" JD.int)
         (JD.field "xp" JD.int)
         (JD.field "id" (JD.int |> JD.map PlayerId))

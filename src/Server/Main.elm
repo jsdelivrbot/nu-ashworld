@@ -5,6 +5,7 @@ import Json.Encode as JE
 import Platform
 import Server.Route exposing (Route(..))
 import Shared.Player exposing (PlayerId, ServerPlayer)
+import Shared.World
 
 
 -- GENERAL
@@ -35,7 +36,7 @@ type alias Flags =
 
 
 type alias Model =
-    { players : AnyDict Int PlayerId ServerPlayer
+    { world : Shared.World.ServerWorld
     }
 
 
@@ -58,7 +59,7 @@ main =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( { players = Dict.empty Shared.Player.idToInt }
+    ( { world = { players = Dict.empty Shared.Player.idToInt } }
     , Cmd.none
     )
 
@@ -80,25 +81,32 @@ update msg model =
                     let
                         newId : PlayerId
                         newId =
-                            Dict.size model.players
+                            Dict.size model.world.players
                                 |> Shared.Player.id
 
                         newPlayer : ServerPlayer
                         newPlayer =
                             Shared.Player.init
+
+                        newModel : Model
+                        newModel =
+                            model
+                                |> addPlayer newId newPlayer
                     in
-                    ( model
-                        |> addPlayer newId newPlayer
+                    ( newModel
                     , Cmd.batch
                         [ log ("Signup: registered new player " ++ String.fromInt (Shared.Player.idToInt newId))
-                        , sendHttpResponse (Server.Route.encodeSignupSuccess newId newPlayer)
+                        , sendHttpResponse (Server.Route.encodeSignupSuccess newId newModel.world)
                         ]
                     )
 
 
 addPlayer : PlayerId -> ServerPlayer -> Model -> Model
-addPlayer id player model =
-    { model | players = model.players |> Dict.insert id player }
+addPlayer id player ({ world } as model) =
+    { model
+        | world =
+            { world | players = world.players |> Dict.insert id player }
+    }
 
 
 subscriptions : Model -> Sub Msg

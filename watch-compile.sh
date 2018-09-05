@@ -13,9 +13,6 @@ function run {
   echo -en "${COLOR_OFF}";
 
   case "${1}" in
-    ./src/Server/*)
-      ./compile.sh "Server" "src/Server/Main.elm" "dist/elm-server.js";
-      ;;
     ./src/Client/*)
       ./compile.sh "Client" "src/Client/Main.elm" "dist/elm-client.js";
       ;;

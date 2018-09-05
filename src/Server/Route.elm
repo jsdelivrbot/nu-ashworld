@@ -8,7 +8,8 @@ module Server.Route
         )
 
 import Json.Encode as JE
-import Shared.Player exposing (PlayerId, ServerPlayer)
+import Shared.Player exposing (PlayerId)
+import Shared.World exposing (ServerWorld)
 import Url
 import Url.Builder
 import Url.Parser exposing ((</>), Parser)
@@ -60,9 +61,9 @@ encodeNotFound url =
         ]
 
 
-encodeSignupSuccess : PlayerId -> ServerPlayer -> JE.Value
-encodeSignupSuccess id player =
+encodeSignupSuccess : PlayerId -> ServerWorld -> JE.Value
+encodeSignupSuccess playerId world =
     JE.object
         [ ( "success", JE.bool True )
-        , ( "player", Shared.Player.encode id player )
+        , ( "world", Shared.World.encode playerId world )
         ]
