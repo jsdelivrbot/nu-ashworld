@@ -2,13 +2,12 @@ module Client.Main exposing (main)
 
 import Browser
 import Browser.Navigation
-import Client.Player exposing (Player)
-import Html as H exposing (Html)
+import Html as H exposing (Attribute, Html)
 import Html.Events as HE
 import Http
 import Json.Decode as JD exposing (Decoder)
 import Server.Route exposing (toString)
-import Shared.Player
+import Shared.Player exposing (ClientPlayer)
 import Url exposing (Url)
 
 
@@ -24,7 +23,7 @@ type alias Flags =
 type alias Model =
     { navigationKey : Browser.Navigation.Key
     , messages : List String
-    , player : Maybe Player
+    , player : Maybe ClientPlayer
     }
 
 
@@ -33,7 +32,7 @@ type Msg
     | UrlRequested Browser.UrlRequest
     | UrlChanged Url
     | Request Server.Route.Route
-    | GetSignupResponse (Result Http.Error Player)
+    | GetSignupResponse (Result Http.Error ClientPlayer)
 
 
 main : Program Flags Model Msg
@@ -89,13 +88,13 @@ update msg model =
 
                 Ok player ->
                     model
-                        |> addMessage ("Got Signup response! Player ID " ++ String.fromInt player.id)
+                        |> addMessage ("Got Signup response! Player ID " ++ String.fromInt (Shared.Player.idToInt player.id))
                         |> setPlayer player
             , Cmd.none
             )
 
 
-setPlayer : Player -> Model -> Model
+setPlayer : ClientPlayer -> Model -> Model
 setPlayer player model =
     { model | player = Just player }
 
@@ -160,12 +159,17 @@ viewButtons : Html Msg
 viewButtons =
     H.div []
         [ H.button
-            [ HE.onClick (Request Server.Route.Signup) ]
+            [ onClickRequest Server.Route.Signup ]
             [ H.text "Signup" ]
         ]
 
 
-viewPlayer : Player -> Html Msg
+onClickRequest : Server.Route.Route -> Attribute Msg
+onClickRequest route =
+    HE.onClick (Request route)
+
+
+viewPlayer : ClientPlayer -> Html Msg
 viewPlayer player =
     H.table []
         [ H.tr []
@@ -174,7 +178,7 @@ viewPlayer player =
             ]
         , H.tr []
             [ H.th [] [ H.text "ID" ]
-            , H.td [] [ H.text (String.fromInt player.id) ]
+            , H.td [] [ H.text (String.fromInt (Shared.Player.idToInt player.id)) ]
             ]
         , H.tr []
             [ H.th [] [ H.text "HP" ]

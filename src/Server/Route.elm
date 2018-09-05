@@ -1,5 +1,14 @@
-module Server.Route exposing (Route(..), fromString, toString)
+module Server.Route
+    exposing
+        ( Route(..)
+        , encodeNotFound
+        , encodeSignupSuccess
+        , fromString
+        , toString
+        )
 
+import Json.Encode as JE
+import Shared.Player exposing (PlayerId, ServerPlayer)
 import Url
 import Url.Builder
 import Url.Parser exposing ((</>), Parser)
@@ -41,3 +50,19 @@ parser =
 signup : Parser a a
 signup =
     Url.Parser.s "signup"
+
+
+encodeNotFound : String -> JE.Value
+encodeNotFound url =
+    JE.object
+        [ ( "success", JE.bool False )
+        , ( "error", JE.string ("Route \"" ++ url ++ "\" not found.") )
+        ]
+
+
+encodeSignupSuccess : PlayerId -> ServerPlayer -> JE.Value
+encodeSignupSuccess id player =
+    JE.object
+        [ ( "success", JE.bool True )
+        , ( "player", Shared.Player.encode id player )
+        ]
