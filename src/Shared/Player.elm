@@ -9,8 +9,11 @@ module Shared.Player
         , encodeOtherPlayer
         , id
         , idToInt
+        , idToString
         , init
         , otherPlayerDecoder
+        , serverToClient
+        , serverToClientOther
         )
 
 import Json.Decode as JD exposing (Decoder)
@@ -29,6 +32,13 @@ id num =
 idToInt : PlayerId -> Int
 idToInt (PlayerId num) =
     num
+
+
+idToString : PlayerId -> String
+idToString playerId =
+    playerId
+        |> idToInt
+        |> String.fromInt
 
 
 type alias ClientPlayer =
@@ -50,26 +60,45 @@ type alias ServerPlayer =
     { hp : Int
     , maxHp : Int
     , xp : Int
+    , id : PlayerId
     , secret : ()
     }
 
 
-init : ServerPlayer
-init =
+serverToClient : ServerPlayer -> ClientPlayer
+serverToClient ({ hp, xp, maxHp } as player) =
+    { hp = hp
+    , xp = xp
+    , maxHp = maxHp
+    , id = player.id
+    }
+
+
+serverToClientOther : ServerPlayer -> ClientOtherPlayer
+serverToClientOther ({ hp, xp } as player) =
+    { hp = hp
+    , xp = xp
+    , id = player.id
+    }
+
+
+init : PlayerId -> ServerPlayer
+init playerId =
     { hp = 10
     , maxHp = 10
     , xp = 0
     , secret = ()
+    , id = playerId
     }
 
 
-encode : PlayerId -> ServerPlayer -> JE.Value
-encode (PlayerId playerId) player =
+encode : ClientPlayer -> JE.Value
+encode player =
     JE.object
         [ ( "hp", JE.int player.hp )
         , ( "maxHp", JE.int player.maxHp )
         , ( "xp", JE.int player.xp )
-        , ( "id", JE.int playerId )
+        , ( "id", JE.int (idToInt player.id) )
         ]
 
 
@@ -82,12 +111,12 @@ decoder =
         (JD.field "id" (JD.int |> JD.map PlayerId))
 
 
-encodeOtherPlayer : PlayerId -> ServerPlayer -> JE.Value
-encodeOtherPlayer (PlayerId playerId) player =
+encodeOtherPlayer : ClientOtherPlayer -> JE.Value
+encodeOtherPlayer player =
     JE.object
         [ ( "hp", JE.int player.hp )
         , ( "xp", JE.int player.xp )
-        , ( "id", JE.int playerId )
+        , ( "id", JE.int (idToInt player.id) )
         ]
 
 

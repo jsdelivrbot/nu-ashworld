@@ -8,9 +8,10 @@ import Html.Events as HE
 import Http
 import Json.Decode as JD exposing (Decoder)
 import RemoteData exposing (RemoteData(..), WebData)
-import Server.Route exposing (toString)
-import Shared.Player exposing (ClientOtherPlayer, ClientPlayer)
-import Shared.World
+import Server.Route exposing (AttackResponse, SignupResponse, toString)
+import Shared.Fight exposing (Fight, FightResult(..))
+import Shared.Player exposing (ClientOtherPlayer, ClientPlayer, PlayerId)
+import Shared.World exposing (ClientWorld)
 import Url exposing (Url)
 
 
@@ -26,13 +27,8 @@ type alias Flags =
 type alias Model =
     { navigationKey : Browser.Navigation.Key
     , messages : List String
-    , world : WebData World
-    }
-
-
-type alias World =
-    { player : ClientPlayer
-    , otherPlayers : List ClientOtherPlayer
+    , world : WebData ClientWorld
+    , lastFight : WebData Fight
     }
 
 
@@ -41,7 +37,8 @@ type Msg
     | UrlRequested Browser.UrlRequest
     | UrlChanged Url
     | Request Server.Route.Route
-    | GetSignupResponse (WebData World)
+    | GetSignupResponse (WebData SignupResponse)
+    | GetAttackResponse (WebData AttackResponse)
 
 
 main : Program Flags Model Msg
@@ -61,6 +58,7 @@ init flags url key =
     ( { navigationKey = key
       , messages = [ "Init successful!" ]
       , world = NotAsked
+      , lastFight = NotAsked
       }
     , Cmd.none
     )
@@ -84,22 +82,66 @@ update msg model =
             , Cmd.none
             )
 
-        Request route ->
+        Request Server.Route.NotFound ->
             ( model
+            , Cmd.none
+            )
+
+        Request (Server.Route.Signup as route) ->
+            ( model
+                |> setWorldAsLoading
             , sendRequest route
             )
 
-        GetSignupResponse world ->
+        Request ((Server.Route.Attack otherPlayerId) as route) ->
+            ( model
+                |> setWorldAsLoading
+                |> setLastFightAsLoading
+            , sendRequest route
+            )
+
+        GetSignupResponse response ->
             ( model
                 |> addMessage "Got Signup response!"
-                |> setWorld world
+                |> updateWorld response
+            , Cmd.none
+            )
+
+        GetAttackResponse response ->
+            ( model
+                |> addMessage "Got Attack response!"
+                |> updateLastFight response
+                |> updateWorld response
             , Cmd.none
             )
 
 
-setWorld : WebData World -> Model -> Model
-setWorld world model =
-    { model | world = world }
+type alias WithFight a =
+    { a | fight : Fight }
+
+
+type alias WithWorld a =
+    { a | world : ClientWorld }
+
+
+updateWorld : WebData (WithWorld a) -> Model -> Model
+updateWorld response model =
+    { model | world = response |> RemoteData.map .world }
+
+
+updateLastFight : WebData (WithFight a) -> Model -> Model
+updateLastFight response model =
+    { model | lastFight = response |> RemoteData.map .fight }
+
+
+setWorldAsLoading : Model -> Model
+setWorldAsLoading model =
+    { model | world = Loading }
+
+
+setLastFightAsLoading : Model -> Model
+setLastFightAsLoading model =
+    { model | lastFight = Loading }
 
 
 addMessage : String -> Model -> Model
@@ -125,7 +167,17 @@ sendRequest route =
         Server.Route.Signup ->
             send
                 GetSignupResponse
-                (JD.field "world" Shared.World.decoder)
+                (JD.map SignupResponse
+                    (JD.field "world" Shared.World.decoder)
+                )
+
+        Server.Route.Attack playerId ->
+            send
+                GetAttackResponse
+                (JD.map2 AttackResponse
+                    (JD.field "world" Shared.World.decoder)
+                    (JD.field "fight" Shared.Fight.decoder)
+                )
 
 
 subscriptions : Model -> Sub Msg
@@ -140,6 +192,7 @@ view model =
         [ viewButtons model.world
         , viewMessages model.messages
         , viewWorld model.world
+        , viewLastFight model.lastFight
         ]
     }
 
@@ -157,7 +210,7 @@ viewMessage message =
     H.li [] [ H.text message ]
 
 
-viewButtons : WebData World -> Html Msg
+viewButtons : WebData ClientWorld -> Html Msg
 viewButtons world =
     H.div []
         [ H.button
@@ -175,7 +228,51 @@ onClickRequest route =
     HE.onClick (Request route)
 
 
-viewWorld : WebData World -> Html Msg
+viewLastFight : WebData Fight -> Html Msg
+viewLastFight fight =
+    case fight of
+        NotAsked ->
+            H.text ""
+
+        Loading ->
+            H.text "Loading"
+
+        Failure err ->
+            H.text "Error :("
+
+        Success fight_ ->
+            H.div []
+                [ H.strong [] [ H.text "Last fight:" ]
+                , viewFightLog fight_.log
+                , viewFightResult fight_.result
+                ]
+
+
+viewFightLog : List String -> Html Msg
+viewFightLog log =
+    H.ul [] (List.map viewFightLogEntry log)
+
+
+viewFightLogEntry : String -> Html Msg
+viewFightLogEntry entry =
+    H.li [] [ H.text entry ]
+
+
+viewFightResult : FightResult -> Html Msg
+viewFightResult fightResult =
+    H.strong []
+        [ H.text
+            (case fightResult of
+                YouWon ->
+                    "You won!"
+
+                YouLost ->
+                    "You lost!"
+            )
+        ]
+
+
+viewWorld : WebData ClientWorld -> Html Msg
 viewWorld world =
     case world of
         NotAsked ->
@@ -185,17 +282,17 @@ viewWorld world =
             H.text "Loading"
 
         Failure err ->
-            H.text "Error getting data from server :("
+            H.text "Error :("
 
         Success world_ ->
             viewLoadedWorld world_
 
 
-viewLoadedWorld : World -> Html Msg
+viewLoadedWorld : ClientWorld -> Html Msg
 viewLoadedWorld world =
     H.div []
         [ viewPlayer world.player
-        , viewOtherPlayers world.otherPlayers
+        , viewOtherPlayers world.player.id world.otherPlayers
         ]
 
 
@@ -208,7 +305,7 @@ viewPlayer player =
             ]
         , H.tr []
             [ H.th [] [ H.text "ID" ]
-            , H.td [] [ H.text (String.fromInt (Shared.Player.idToInt player.id)) ]
+            , H.td [] [ H.text (Shared.Player.idToString player.id) ]
             ]
         , H.tr []
             [ H.th [] [ H.text "HP" ]
@@ -221,8 +318,8 @@ viewPlayer player =
         ]
 
 
-viewOtherPlayers : List ClientOtherPlayer -> Html Msg
-viewOtherPlayers players =
+viewOtherPlayers : PlayerId -> List ClientOtherPlayer -> Html Msg
+viewOtherPlayers playerId players =
     H.div []
         [ H.strong [] [ H.text "Other players:" ]
         , if List.isEmpty players then
@@ -233,16 +330,22 @@ viewOtherPlayers players =
                     [ H.th [] [ H.text "Player" ]
                     , H.th [] [ H.text "HP" ]
                     , H.th [] [ H.text "XP" ]
+                    , H.th [] []
                     ]
-                    :: List.map viewOtherPlayer players
+                    :: List.map (viewOtherPlayer playerId) players
                 )
         ]
 
 
-viewOtherPlayer : ClientOtherPlayer -> Html Msg
-viewOtherPlayer player =
+viewOtherPlayer : PlayerId -> ClientOtherPlayer -> Html Msg
+viewOtherPlayer playerId otherPlayer =
     H.tr []
-        [ H.td [] [ H.text (String.fromInt (Shared.Player.idToInt player.id)) ]
-        , H.td [] [ H.text (String.fromInt player.hp) ]
-        , H.td [] [ H.text (String.fromInt player.xp) ]
+        [ H.td [] [ H.text (Shared.Player.idToString otherPlayer.id) ]
+        , H.td [] [ H.text (String.fromInt otherPlayer.hp) ]
+        , H.td [] [ H.text (String.fromInt otherPlayer.xp) ]
+        , H.td []
+            [ H.button
+                [ onClickRequest (Server.Route.Attack { you = playerId, them = otherPlayer.id }) ]
+                [ H.text "Attack!" ]
+            ]
         ]

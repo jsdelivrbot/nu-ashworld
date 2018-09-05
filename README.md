@@ -14,3 +14,7 @@ $ google-chrome http://localhost:4444
 The server is currently not persisted to a database; it runs in-memory.
 
 There is currently no hot reloading and if you really wanted, you could see the server code from the client endpoint. Also there's no login/authentication right now. :poop:
+
+## Next step:
+
+Login as an existing player, refresh the world data. Investigate bidirectional websockets in 0.19 or HTTP push or something.

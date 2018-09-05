@@ -4,6 +4,8 @@ module Shared.World
         , ServerWorld
         , decoder
         , encode
+        , encodeMaybe
+        , serverToClient
         )
 
 import Dict.Any as Dict exposing (AnyDict)
@@ -23,31 +25,48 @@ type alias ClientWorld =
     }
 
 
-encode : PlayerId -> ServerWorld -> JE.Value
-encode playerId world =
+serverToClient : PlayerId -> ServerWorld -> Maybe ClientWorld
+serverToClient playerId serverWorld =
     let
-        ( playerInList, otherPlayers ) =
-            world.players
+        ( maybePlayer, otherPlayers ) =
+            serverWorld.players
                 |> Dict.toList
                 |> List.partition (\( id, _ ) -> id == playerId)
+                |> Tuple.mapFirst List.head
+                |> Tuple.mapSecond (List.map (Tuple.second >> Shared.Player.serverToClientOther))
     in
-    playerInList
-        |> List.head
+    maybePlayer
         |> Maybe.map
             (\( _, player ) ->
-                JE.object
-                    [ ( "player", Shared.Player.encode playerId player )
-                    , ( "otherPlayers"
-                      , JE.list
-                            (\( pId, p ) -> Shared.Player.encodeOtherPlayer pId p)
-                            otherPlayers
-                      )
-                    ]
+                { player = Shared.Player.serverToClient player
+                , otherPlayers = otherPlayers
+                }
             )
-        |> Maybe.withDefault
-            (JE.object
-                [ ( "error", JE.string "Couldn't get logged in player data" ) ]
-            )
+
+
+encode : ClientWorld -> JE.Value
+encode world =
+    JE.object
+        [ ( "player", Shared.Player.encode world.player )
+        , ( "otherPlayers"
+          , JE.list
+                Shared.Player.encodeOtherPlayer
+                world.otherPlayers
+          )
+        ]
+
+
+encodeMaybe : Maybe ClientWorld -> JE.Value
+encodeMaybe maybeWorld =
+    maybeWorld
+        |> Maybe.map encode
+        |> Maybe.withDefault encodeWorldError
+
+
+encodeWorldError : JE.Value
+encodeWorldError =
+    JE.object
+        [ ( "error", JE.string "Couldn't get the current player" ) ]
 
 
 decoder : Decoder ClientWorld
