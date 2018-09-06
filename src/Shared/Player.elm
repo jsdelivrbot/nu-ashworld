@@ -61,7 +61,7 @@ type alias ServerPlayer =
     , maxHp : Int
     , xp : Int
     , id : PlayerId
-    , secret : ()
+    , messageQueue : List String
     }
 
 
@@ -87,7 +87,7 @@ init playerId =
     { hp = 10
     , maxHp = 10
     , xp = 0
-    , secret = ()
+    , messageQueue = []
     , id = playerId
     }
 

@@ -96,58 +96,95 @@ update msg model =
                                 |> addPlayer newId newPlayer
                     in
                     ( newModel
-                    , sendHttpResponse (Server.Route.encodeSignupSuccess newId newModel.world)
+                    , sendHttpResponse
+                        (Server.Route.signupResponse newId newModel.world
+                            |> Maybe.map Server.Route.encodeSignup
+                            |> Maybe.withDefault Server.Route.encodeSignupError
+                        )
                     )
 
                 Login playerId ->
-                    ( model
-                    , case Dict.get playerId model.world.players of
-                        Just player ->
-                            sendHttpResponse (Server.Route.encodeLoginSuccess playerId model.world)
-
-                        Nothing ->
-                            sendHttpResponse Server.Route.encodeLoginFailure
+                    let
+                        ( messageQueue, newModel ) =
+                            getMessageQueue playerId model
+                    in
+                    ( newModel
+                    , sendHttpResponse
+                        (Server.Route.loginResponse messageQueue playerId newModel.world
+                            |> Maybe.map Server.Route.encodeLogin
+                            |> Maybe.withDefault Server.Route.encodeLoginError
+                        )
                     )
 
                 Refresh playerId ->
-                    ( model
-                    , Cmd.batch
-                        (case Dict.get playerId model.world.players of
-                            Just player ->
-                                [ sendHttpResponse (Server.Route.encodeRefreshSuccess playerId model.world)
-                                ]
-
-                            Nothing ->
-                                [ sendHttpResponse Server.Route.encodeRefreshFailure
-                                ]
+                    let
+                        ( messageQueue, newModel ) =
+                            getMessageQueue playerId model
+                    in
+                    ( newModel
+                    , sendHttpResponse
+                        (Server.Route.refreshResponse messageQueue playerId newModel.world
+                            |> Maybe.map Server.Route.encodeRefresh
+                            |> Maybe.withDefault Server.Route.encodeRefreshError
                         )
                     )
 
                 Attack { you, them } ->
                     let
+                        ( messageQueue, modelWithoutMessages ) =
+                            getMessageQueue you model
+
                         fight : Fight
                         fight =
+                            -- TODO randomize
                             { log =
-                                [ "With your admin poweors, you one-shot them. This is boring."
+                                [ "With your admin powers, you one-shot the other player. This is boring."
                                 , "The other player dies."
+                                , "You won!"
                                 ]
                             , result = YouWon
                             }
 
                         newWorld : ServerWorld
                         newWorld =
-                            model.world
+                            modelWithoutMessages.world
                                 |> Server.World.setPlayerHp 0 them
                                 |> Server.World.addPlayerXp 10 you
 
                         newModel : Model
                         newModel =
-                            model
+                            modelWithoutMessages
                                 |> setWorld newWorld
                     in
                     ( newModel
-                    , sendHttpResponse (Server.Route.encodeAttackSuccess you fight newModel.world)
+                    , sendHttpResponse
+                        (Server.Route.attackResponse messageQueue you newModel.world fight
+                            |> Maybe.map Server.Route.encodeAttack
+                            |> Maybe.withDefault Server.Route.encodeAttackError
+                        )
                     )
+
+
+getMessageQueue : PlayerId -> Model -> ( List String, Model )
+getMessageQueue id model =
+    let
+        queue : List String
+        queue =
+            Dict.get id model.world.players
+                |> Maybe.map .messageQueue
+                |> Maybe.withDefault []
+
+        newWorld : ServerWorld
+        newWorld =
+            model.world
+                |> Server.World.emptyPlayerMessageQueue id
+
+        newModel : Model
+        newModel =
+            model
+                |> setWorld newWorld
+    in
+    ( queue, newModel )
 
 
 setWorld : ServerWorld -> Model -> Model

@@ -17,6 +17,7 @@ import Server.Route
         , toString
         )
 import Shared.Fight exposing (Fight, FightResult(..))
+import Shared.MessageQueue
 import Shared.Player exposing (ClientOtherPlayer, ClientPlayer, PlayerId)
 import Shared.World exposing (ClientWorld)
 import Url exposing (Url)
@@ -161,18 +162,7 @@ addFightMessages : WebData (WithFight a) -> Model -> Model
 addFightMessages response model =
     case response of
         Success { fight } ->
-            { model
-                | messages =
-                    model.messages
-                        ++ fight.log
-                        ++ [ case fight.result of
-                                YouWon ->
-                                    "You won!"
-
-                                YouLost ->
-                                    "You lost!"
-                           ]
-            }
+            { model | messages = model.messages ++ fight.log }
 
         _ ->
             model
@@ -185,7 +175,12 @@ setWorldAsLoading model =
 
 addMessage : String -> Model -> Model
 addMessage message model =
-    { model | messages = message :: model.messages }
+    addMessages [ message ] model
+
+
+addMessages : List String -> Model -> Model
+addMessages messages model =
+    { model | messages = model.messages ++ messages }
 
 
 sendRequest : Server.Route.Route -> Cmd Msg
@@ -199,38 +194,19 @@ sendRequest route =
     in
     case route of
         Server.Route.NotFound ->
-            send
-                (always NoOp)
-                (JD.succeed ())
+            send (\_ -> NoOp) (JD.fail "Server route not found")
 
         Server.Route.Signup ->
-            send
-                GetSignupResponse
-                (JD.map SignupResponse
-                    (JD.field "world" Shared.World.decoder)
-                )
+            send GetSignupResponse Server.Route.signupDecoder
 
         Server.Route.Login _ ->
-            send
-                GetLoginResponse
-                (JD.map LoginResponse
-                    (JD.field "world" Shared.World.decoder)
-                )
+            send GetLoginResponse Server.Route.loginDecoder
 
         Server.Route.Refresh _ ->
-            send
-                GetRefreshResponse
-                (JD.map RefreshResponse
-                    (JD.field "world" Shared.World.decoder)
-                )
+            send GetRefreshResponse Server.Route.refreshDecoder
 
         Server.Route.Attack _ ->
-            send
-                GetAttackResponse
-                (JD.map2 AttackResponse
-                    (JD.field "world" Shared.World.decoder)
-                    (JD.field "fight" Shared.Fight.decoder)
-                )
+            send GetAttackResponse Server.Route.attackDecoder
 
 
 subscriptions : Model -> Sub Msg
