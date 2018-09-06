@@ -17,4 +17,8 @@ There is currently no hot reloading and if you really wanted, you could see the 
 
 ## Next step:
 
-Refresh the world data. Investigate bidirectional websockets in 0.19 or HTTP push or something.
+- [ ] Investigate bidirectional websockets in 0.19
+- [ ] Time-based HP regeneration
+- [ ] Only fight when you have some HP
+- [ ] Levels
+
