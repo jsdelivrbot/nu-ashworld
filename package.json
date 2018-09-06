@@ -8,7 +8,7 @@
     "build": "yarn build:client && yarn build:server",
     "build:debug": "yarn build:client:debug && yarn build:server:debug",
     "format": "elm-format --yes src",
-    "start:client": "yarn build:client && cd dist && live-server --port=4444 --watch=index.html,elm-client.js",
+    "start:client": "yarn build:client && cd dist && live-server --port=4444 --watch=*.html,elm-client.js,*.css",
     "start:server": "yarn build:server && cd dist && nodemon -w server.js -w elm-server.js server.js"
   },
   "dependencies": {

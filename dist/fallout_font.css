@@ -1,0 +1,24 @@
+@font-face {
+  font-family: 'Overseer';
+  src: url('fonts/Overseer Italic.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal; 
+}
+
+@font-face { 
+  font-family: 'r_fallouty';
+  src: url('fonts/r_fallouty.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal; 
+}
+
+.fallout-title {
+  font-family: 'Overseer', sans-serif;
+  font-size: 48px;
+}
+
+.fallout {
+  font-family: 'r_fallouty', monospace;
+  font-size: 12px;
+}
+
