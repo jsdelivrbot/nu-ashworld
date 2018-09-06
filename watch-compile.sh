@@ -9,23 +9,15 @@ function run {
 
   echo -en "${DIM}";
   date -R;
-  #echo "# ./run ${1}";
   echo -en "${COLOR_OFF}";
 
-  case "${1}" in
-    ./src/Client/*)
-      ./compile.sh "Client" "src/Client/Main.elm" "dist/elm-client.js";
-      ;;
-    *)
-      ./compile.sh "Server" "src/Server/Main.elm" "dist/elm-server.js";
-      echo;
-      ./compile.sh "Client" "src/Client/Main.elm" "dist/elm-client.js";
-      ;;
-  esac
+  ./compile.sh "Server" "src/Server/Main.elm" "dist/elm-server.js";
+  echo;
+  ./compile.sh "Client" "src/Client/Main.elm" "dist/elm-client.js";
 }
 
-run "both";
+run;
 
 inotifywait -mqr -e close_write --format '%w%f' ./src | while read FILE; do
-  run "${FILE}";
+  run;
 done;

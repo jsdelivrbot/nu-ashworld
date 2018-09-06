@@ -35,7 +35,6 @@ type alias Model =
     { navigationKey : Browser.Navigation.Key
     , messages : List String
     , world : WebData ClientWorld
-    , lastFight : WebData Fight
     }
 
 
@@ -65,9 +64,8 @@ main =
 init : Flags -> Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
 init flags url key =
     ( { navigationKey = key
-      , messages = [ "Init successful!" ]
+      , messages = []
       , world = NotAsked
-      , lastFight = NotAsked
       }
     , Cmd.none
     )
@@ -111,7 +109,6 @@ update msg model =
         Request ((Server.Route.Attack otherPlayerId) as route) ->
             ( model
                 |> setWorldAsLoading
-                |> setLastFightAsLoading
             , sendRequest route
             )
 
@@ -141,7 +138,7 @@ update msg model =
 
         GetAttackResponse response ->
             ( model
-                |> updateLastFight response
+                |> addFightMessages response
                 |> updateWorld response
             , Cmd.none
             )
@@ -160,19 +157,30 @@ updateWorld response model =
     { model | world = response |> RemoteData.map .world }
 
 
-updateLastFight : WebData (WithFight a) -> Model -> Model
-updateLastFight response model =
-    { model | lastFight = response |> RemoteData.map .fight }
+addFightMessages : WebData (WithFight a) -> Model -> Model
+addFightMessages response model =
+    case response of
+        Success { fight } ->
+            { model
+                | messages =
+                    model.messages
+                        ++ fight.log
+                        ++ [ case fight.result of
+                                YouWon ->
+                                    "You won!"
+
+                                YouLost ->
+                                    "You lost!"
+                           ]
+            }
+
+        _ ->
+            model
 
 
 setWorldAsLoading : Model -> Model
 setWorldAsLoading model =
     { model | world = Loading }
-
-
-setLastFightAsLoading : Model -> Model
-setLastFightAsLoading model =
-    { model | lastFight = Loading }
 
 
 addMessage : String -> Model -> Model
@@ -237,7 +245,6 @@ view model =
         [ viewButtons model.world
         , viewMessages model.messages
         , viewWorld model.world
-        , viewLastFight model.lastFight
         ]
     }
 
@@ -283,50 +290,6 @@ viewButtons world =
 onClickRequest : Server.Route.Route -> Attribute Msg
 onClickRequest route =
     HE.onClick (Request route)
-
-
-viewLastFight : WebData Fight -> Html Msg
-viewLastFight fight =
-    case fight of
-        NotAsked ->
-            H.text ""
-
-        Loading ->
-            H.text "Loading"
-
-        Failure err ->
-            H.text "Error :("
-
-        Success fight_ ->
-            H.div []
-                [ H.strong [] [ H.text "Last fight:" ]
-                , viewFightLog fight_.log
-                , viewFightResult fight_.result
-                ]
-
-
-viewFightLog : List String -> Html Msg
-viewFightLog log =
-    H.ul [] (List.map viewFightLogEntry log)
-
-
-viewFightLogEntry : String -> Html Msg
-viewFightLogEntry entry =
-    H.li [] [ H.text entry ]
-
-
-viewFightResult : FightResult -> Html Msg
-viewFightResult fightResult =
-    H.strong []
-        [ H.text
-            (case fightResult of
-                YouWon ->
-                    "You won!"
-
-                YouLost ->
-                    "You lost!"
-            )
-        ]
 
 
 viewWorld : WebData ClientWorld -> Html Msg
