@@ -12,6 +12,7 @@ import Server.Route
     exposing
         ( AttackResponse
         , LoginResponse
+        , RefreshResponse
         , SignupResponse
         , toString
         )
@@ -45,6 +46,7 @@ type Msg
     | Request Server.Route.Route
     | GetSignupResponse (WebData SignupResponse)
     | GetLoginResponse (WebData LoginResponse)
+    | GetRefreshResponse (WebData RefreshResponse)
     | GetAttackResponse (WebData AttackResponse)
 
 
@@ -113,23 +115,32 @@ update msg model =
             , sendRequest route
             )
 
+        Request ((Server.Route.Refresh playerId) as route) ->
+            ( model
+                |> setWorldAsLoading
+            , sendRequest route
+            )
+
         GetSignupResponse response ->
             ( model
-                |> addMessage "Got Signup response!"
                 |> updateWorld response
             , Cmd.none
             )
 
         GetLoginResponse response ->
             ( model
-                |> addMessage "Got Login response!"
+                |> updateWorld response
+            , Cmd.none
+            )
+
+        GetRefreshResponse response ->
+            ( model
                 |> updateWorld response
             , Cmd.none
             )
 
         GetAttackResponse response ->
             ( model
-                |> addMessage "Got Attack response!"
                 |> updateLastFight response
                 |> updateWorld response
             , Cmd.none
@@ -191,14 +202,21 @@ sendRequest route =
                     (JD.field "world" Shared.World.decoder)
                 )
 
-        Server.Route.Login playerId ->
+        Server.Route.Login _ ->
             send
                 GetLoginResponse
                 (JD.map LoginResponse
                     (JD.field "world" Shared.World.decoder)
                 )
 
-        Server.Route.Attack playerId ->
+        Server.Route.Refresh _ ->
+            send
+                GetRefreshResponse
+                (JD.map RefreshResponse
+                    (JD.field "world" Shared.World.decoder)
+                )
+
+        Server.Route.Attack _ ->
             send
                 GetAttackResponse
                 (JD.map2 AttackResponse
@@ -253,6 +271,12 @@ viewButtons world =
         , H.button
             [ onClickRequest (Server.Route.Login (Shared.Player.id 1)) ]
             [ H.text "Login 1" ]
+        , H.button
+            [ world
+                |> RemoteData.map (\{ player } -> onClickRequest (Server.Route.Refresh player.id))
+                |> RemoteData.withDefault (HA.disabled True)
+            ]
+            [ H.text "Refresh" ]
         ]
 
 

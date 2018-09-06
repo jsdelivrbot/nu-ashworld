@@ -96,24 +96,29 @@ update msg model =
                                 |> addPlayer newId newPlayer
                     in
                     ( newModel
-                    , Cmd.batch
-                        [ log ("Signup: registered new player #" ++ Shared.Player.idToString newId)
-                        , sendHttpResponse (Server.Route.encodeSignupSuccess newId newModel.world)
-                        ]
+                    , sendHttpResponse (Server.Route.encodeSignupSuccess newId newModel.world)
                     )
 
                 Login playerId ->
                     ( model
+                    , case Dict.get playerId model.world.players of
+                        Just player ->
+                            sendHttpResponse (Server.Route.encodeLoginSuccess playerId model.world)
+
+                        Nothing ->
+                            sendHttpResponse Server.Route.encodeLoginFailure
+                    )
+
+                Refresh playerId ->
+                    ( model
                     , Cmd.batch
                         (case Dict.get playerId model.world.players of
                             Just player ->
-                                [ log ("Login: successful as #" ++ Shared.Player.idToString playerId)
-                                , sendHttpResponse (Server.Route.encodeLoginSuccess playerId model.world)
+                                [ sendHttpResponse (Server.Route.encodeRefreshSuccess playerId model.world)
                                 ]
 
                             Nothing ->
-                                [ log ("Login: unsuccessful as #" ++ Shared.Player.idToString playerId)
-                                , sendHttpResponse Server.Route.encodeLoginFailure
+                                [ sendHttpResponse Server.Route.encodeRefreshFailure
                                 ]
                         )
                     )
@@ -141,15 +146,7 @@ update msg model =
                                 |> setWorld newWorld
                     in
                     ( newModel
-                    , Cmd.batch
-                        [ log
-                            ("Attack: Player #"
-                                ++ Shared.Player.idToString you
-                                ++ " attacks player #"
-                                ++ Shared.Player.idToString them
-                            )
-                        , sendHttpResponse (Server.Route.encodeAttackSuccess you fight newModel.world)
-                        ]
+                    , sendHttpResponse (Server.Route.encodeAttackSuccess you fight newModel.world)
                     )
 
 

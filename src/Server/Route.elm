@@ -2,12 +2,15 @@ module Server.Route
     exposing
         ( AttackResponse
         , LoginResponse
+        , RefreshResponse
         , Route(..)
         , SignupResponse
         , encodeAttackSuccess
         , encodeLoginFailure
         , encodeLoginSuccess
         , encodeNotFound
+        , encodeRefreshFailure
+        , encodeRefreshSuccess
         , encodeSignupSuccess
         , fromString
         , toString
@@ -26,6 +29,7 @@ type Route
     = NotFound
     | Signup
     | Login PlayerId
+    | Refresh PlayerId
     | Attack
         { you : PlayerId
         , them : PlayerId
@@ -38,6 +42,11 @@ type alias SignupResponse =
 
 
 type alias LoginResponse =
+    { world : ClientWorld
+    }
+
+
+type alias RefreshResponse =
     { world : ClientWorld
     }
 
@@ -68,6 +77,13 @@ toString route =
         Signup ->
             Url.Builder.absolute [ "signup" ] []
 
+        Refresh id ->
+            Url.Builder.absolute
+                [ "refresh"
+                , Shared.Player.idToString id
+                ]
+                []
+
         Login id ->
             Url.Builder.absolute
                 [ "login"
@@ -88,8 +104,9 @@ parser : Parser (Route -> a) a
 parser =
     Url.Parser.oneOf
         [ Url.Parser.map Signup signup
-        , Url.Parser.map (\you them -> Attack { you = you, them = them }) attack
         , Url.Parser.map Login login
+        , Url.Parser.map Refresh refresh
+        , Url.Parser.map (\you them -> Attack { you = you, them = them }) attack
         ]
 
 
@@ -101,6 +118,11 @@ signup =
 login : Parser (PlayerId -> a) a
 login =
     Url.Parser.s "login" </> playerId
+
+
+refresh : Parser (PlayerId -> a) a
+refresh =
+    Url.Parser.s "refresh" </> playerId
 
 
 playerId : Parser (PlayerId -> a) a
@@ -140,6 +162,22 @@ encodeLoginSuccess playerId_ world =
 
 encodeLoginFailure : JE.Value
 encodeLoginFailure =
+    JE.object
+        [ ( "success", JE.bool False )
+        , ( "error", JE.string "Couldn't find user" )
+        ]
+
+
+encodeRefreshSuccess : PlayerId -> ServerWorld -> JE.Value
+encodeRefreshSuccess playerId_ world =
+    JE.object
+        [ ( "success", JE.bool True )
+        , ( "world", Shared.World.encodeMaybe (Shared.World.serverToClient playerId_ world) )
+        ]
+
+
+encodeRefreshFailure : JE.Value
+encodeRefreshFailure =
     JE.object
         [ ( "success", JE.bool False )
         , ( "error", JE.string "Couldn't find user" )
