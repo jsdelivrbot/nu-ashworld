@@ -1,6 +1,7 @@
 module Server.World
     exposing
-        ( addPlayerXp
+        ( addPlayerMessage
+        , addPlayerXp
         , emptyPlayerMessageQueue
         , setPlayerHp
         )
@@ -20,6 +21,12 @@ addPlayerXp : Int -> PlayerId -> ServerWorld -> ServerWorld
 addPlayerXp addedXp playerId world =
     world
         |> update playerId (Maybe.map (\player -> { player | xp = player.xp + addedXp }))
+
+
+addPlayerMessage : String -> PlayerId -> ServerWorld -> ServerWorld
+addPlayerMessage message playerId world =
+    world
+        |> update playerId (Maybe.map (\player -> { player | messageQueue = player.messageQueue ++ [ message ] }))
 
 
 emptyPlayerMessageQueue : PlayerId -> ServerWorld -> ServerWorld

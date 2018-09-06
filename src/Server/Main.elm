@@ -150,6 +150,7 @@ update msg model =
                             modelWithoutMessages.world
                                 |> Server.World.setPlayerHp 0 them
                                 |> Server.World.addPlayerXp 10 you
+                                |> Server.World.addPlayerMessage ("Player #" ++ Shared.Player.idToString you ++ " fought you and killed you!") them
 
                         newModel : Model
                         newModel =

@@ -122,25 +122,30 @@ update msg model =
         GetSignupResponse response ->
             ( model
                 |> updateWorld response
+                |> updateMessages response
             , Cmd.none
             )
 
         GetLoginResponse response ->
             ( model
                 |> updateWorld response
+                |> emptyMessages
+                |> updateMessages response
             , Cmd.none
             )
 
         GetRefreshResponse response ->
             ( model
                 |> updateWorld response
+                |> updateMessages response
             , Cmd.none
             )
 
         GetAttackResponse response ->
             ( model
-                |> addFightMessages response
                 |> updateWorld response
+                |> updateMessages response
+                |> addFightMessages response
             , Cmd.none
             )
 
@@ -153,9 +158,25 @@ type alias WithWorld a =
     { a | world : ClientWorld }
 
 
+type alias WithMessageQueue a =
+    { a | messageQueue : List String }
+
+
 updateWorld : WebData (WithWorld a) -> Model -> Model
 updateWorld response model =
     { model | world = response |> RemoteData.map .world }
+
+
+emptyMessages : Model -> Model
+emptyMessages model =
+    { model | messages = [] }
+
+
+updateMessages : WebData (WithMessageQueue a) -> Model -> Model
+updateMessages response model =
+    response
+        |> RemoteData.map (\{ messageQueue } -> { model | messages = model.messages ++ messageQueue })
+        |> RemoteData.withDefault model
 
 
 addFightMessages : WebData (WithFight a) -> Model -> Model
