@@ -8,6 +8,7 @@ import Server.World
 import Shared.Fight exposing (Fight, FightResult(..))
 import Shared.Player exposing (PlayerId, ServerPlayer)
 import Shared.World exposing (ServerWorld)
+import Time exposing (Posix)
 
 
 -- GENERAL
@@ -48,6 +49,7 @@ type Url
 
 type Msg
     = UrlRequested Url
+    | HealTick Posix
 
 
 main : Program Flags Model Msg
@@ -193,6 +195,22 @@ update msg model =
                             )
                         )
 
+        HealTick timeOfTick ->
+            let
+                newWorld : ServerWorld
+                newWorld =
+                    model.world
+                        |> Server.World.healEverybody
+
+                newModel : Model
+                newModel =
+                    model
+                        |> setWorld newWorld
+            in
+            ( newModel
+            , Cmd.none
+            )
+
 
 getMessageQueue : PlayerId -> Model -> ( List String, Model )
 getMessageQueue id model =
@@ -229,6 +247,14 @@ addPlayer id player ({ world } as model) =
     }
 
 
+healTickTimeout : Float
+healTickTimeout =
+    2000
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    httpRequests (Url >> UrlRequested)
+    Sub.batch
+        [ httpRequests (Url >> UrlRequested)
+        , Time.every healTickTimeout HealTick
+        ]

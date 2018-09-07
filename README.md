@@ -5,8 +5,7 @@ A game attempting to be like the old [Ashworld](http://web.archive.org/web/20090
 ```bash
 $ yarn
 $ yarn start:server # endpoint: localhost:3333
-$ yarn start:client # endpoint: localhost:4444
-$ google-chrome http://localhost:4444
+$ yarn start:client # endpoint: localhost:4444, should open automatically
 ```
 
 ![Screencast of the current functionality](https://github.com/Janiczek/nu-ashworld/raw/master/video.gif)
@@ -21,6 +20,8 @@ There is currently no hot reloading and if you really wanted, you could see the 
 
 - [x] Only fight when you have some HP
 - [ ] Time-based HP regeneration
+- [ ] Visibility of some "next tick in/at ..." information
+- [ ] Think about putting some "you've healed" msg to players' queues on each Heal tick
 - [ ] Levels
 - [ ] Design (that Adminator bootstrap template looks nice, but it's 1MB, blah. Do it myself? And in black/green FO2 theme? And with FO2 fonts? YESSS)
 - [ ] Investigate and fix the race condition for multiple HTTP responses of the server. (IDs?)

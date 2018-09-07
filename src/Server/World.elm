@@ -3,6 +3,7 @@ module Server.World
         ( addPlayerMessage
         , addPlayerXp
         , emptyPlayerMessageQueue
+        , healEverybody
         , isDead
         , setPlayerHp
         )
@@ -39,6 +40,12 @@ emptyPlayerMessageQueue playerId world =
         |> update playerId (Maybe.map (\player -> { player | messageQueue = [] }))
 
 
+healEverybody : ServerWorld -> ServerWorld
+healEverybody world =
+    world
+        |> map (\_ player -> { player | hp = min (player.hp + 1) player.maxHp })
+
+
 
 -- QUERIES
 
@@ -64,3 +71,8 @@ isDead playerId world =
 update : PlayerId -> (Maybe ServerPlayer -> Maybe ServerPlayer) -> ServerWorld -> ServerWorld
 update playerId fn world =
     { world | players = world.players |> Dict.update playerId fn }
+
+
+map : (PlayerId -> ServerPlayer -> ServerPlayer) -> ServerWorld -> ServerWorld
+map fn world =
+    { world | players = world.players |> Dict.map fn }
