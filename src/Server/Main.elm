@@ -133,37 +133,65 @@ update msg model =
                     let
                         ( messageQueue, modelWithoutMessages ) =
                             getMessageQueue you model
-
-                        fight : Fight
-                        fight =
-                            -- TODO randomize
-                            { log =
-                                [ "With your admin powers, you one-shot the other player. This is boring."
-                                , "The other player dies."
-                                , "You won!"
-                                ]
-                            , result = YouWon
-                            }
-
-                        newWorld : ServerWorld
-                        newWorld =
-                            modelWithoutMessages.world
-                                |> Server.World.setPlayerHp 0 them
-                                |> Server.World.addPlayerXp 10 you
-                                |> Server.World.addPlayerMessage ("Player #" ++ Shared.Player.idToString you ++ " fought you and killed you!") them
-
-                        newModel : Model
-                        newModel =
-                            modelWithoutMessages
-                                |> setWorld newWorld
                     in
-                    ( newModel
-                    , sendHttpResponse
-                        (Server.Route.attackResponse messageQueue you newModel.world fight
-                            |> Maybe.map Server.Route.encodeAttack
-                            |> Maybe.withDefault Server.Route.encodeAttackError
+                    if Server.World.isDead you model.world == Just True then
+                        let
+                            newMessageQueue : List String
+                            newMessageQueue =
+                                messageQueue ++ [ "You are dead, you can't fight." ]
+                        in
+                        ( modelWithoutMessages
+                        , sendHttpResponse
+                            (Server.Route.attackResponse newMessageQueue you modelWithoutMessages.world Nothing
+                                |> Maybe.map Server.Route.encodeAttack
+                                |> Maybe.withDefault Server.Route.encodeAttackError
+                            )
                         )
-                    )
+                    else if Server.World.isDead them model.world == Just True then
+                        let
+                            newMessageQueue : List String
+                            newMessageQueue =
+                                messageQueue ++ [ "They are dead already. There's nothing else for you to do." ]
+                        in
+                        ( modelWithoutMessages
+                        , sendHttpResponse
+                            (Server.Route.attackResponse newMessageQueue you modelWithoutMessages.world Nothing
+                                |> Maybe.map Server.Route.encodeAttack
+                                |> Maybe.withDefault Server.Route.encodeAttackError
+                            )
+                        )
+                    else
+                        let
+                            fight : Fight
+                            fight =
+                                -- TODO randomize
+                                { log =
+                                    [ "With your admin powers, you one-shot the other player. This is boring."
+                                    , "The other player dies."
+                                    , "You won!"
+                                    ]
+                                , result = YouWon
+                                }
+
+                            newWorld : ServerWorld
+                            newWorld =
+                                modelWithoutMessages.world
+                                    |> Server.World.setPlayerHp 0 them
+                                    |> Server.World.addPlayerXp 10 you
+                                    |> Server.World.addPlayerMessage ("Player #" ++ Shared.Player.idToString you ++ " fought you and killed you!") them
+
+                            newModel : Model
+                            newModel =
+                                modelWithoutMessages
+                                    |> setWorld newWorld
+                        in
+                        ( newModel
+                        , sendHttpResponse
+                            (Server.Route.attackResponse messageQueue you newModel.world (Just fight)
+                                |> Maybe.map Server.Route.encodeAttack
+                                |> Maybe.withDefault Server.Route.encodeAttackError
+                            )
+                        )
 
 
 getMessageQueue : PlayerId -> Model -> ( List String, Model )

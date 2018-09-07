@@ -19,7 +19,7 @@ There is currently no hot reloading and if you really wanted, you could see the 
 
 > Roughly in the order of "I'd like to do this the most", `DESC`.
 
-- [ ] Only fight when you have some HP
+- [x] Only fight when you have some HP
 - [ ] Time-based HP regeneration
 - [ ] Levels
 - [ ] Design (that Adminator bootstrap template looks nice, but it's 1MB, blah. Do it myself? And in black/green FO2 theme? And with FO2 fonts? YESSS)

@@ -4,6 +4,8 @@ module Shared.Fight
         , FightResult(..)
         , decoder
         , encode
+        , encodeMaybe
+        , maybeDecoder
         )
 
 import Json.Decode as JD exposing (Decoder)
@@ -28,12 +30,24 @@ decoder =
         (JD.field "result" fightResultDecoder)
 
 
+maybeDecoder : Decoder (Maybe Fight)
+maybeDecoder =
+    JD.maybe decoder
+
+
 encode : Fight -> JE.Value
 encode fight =
     JE.object
         [ ( "log", JE.list JE.string fight.log )
         , ( "result", encodeFightResult fight.result )
         ]
+
+
+encodeMaybe : Maybe Fight -> JE.Value
+encodeMaybe maybeFight =
+    maybeFight
+        |> Maybe.map encode
+        |> Maybe.withDefault JE.null
 
 
 encodeFightResult : FightResult -> JE.Value

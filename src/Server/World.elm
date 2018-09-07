@@ -3,12 +3,16 @@ module Server.World
         ( addPlayerMessage
         , addPlayerXp
         , emptyPlayerMessageQueue
+        , isDead
         , setPlayerHp
         )
 
 import Dict.Any as Dict
 import Shared.Player exposing (PlayerId, ServerPlayer)
 import Shared.World exposing (ServerWorld)
+
+
+-- COMMANDS
 
 
 setPlayerHp : Int -> PlayerId -> ServerWorld -> ServerWorld
@@ -33,6 +37,24 @@ emptyPlayerMessageQueue : PlayerId -> ServerWorld -> ServerWorld
 emptyPlayerMessageQueue playerId world =
     world
         |> update playerId (Maybe.map (\player -> { player | messageQueue = [] }))
+
+
+
+-- QUERIES
+
+
+{-|
+
+  - Nothing == couldn't find the player
+  - Just False == not dead
+  - Just True == dead
+
+-}
+isDead : PlayerId -> ServerWorld -> Maybe Bool
+isDead playerId world =
+    world.players
+        |> Dict.get playerId
+        |> Maybe.map (\{ hp } -> hp == 0)
 
 
 

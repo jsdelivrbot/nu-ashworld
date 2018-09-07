@@ -151,11 +151,19 @@ update msg model =
 
 
 type alias WithFight a =
-    { a | fight : Fight }
+    { a | fight : Maybe Fight }
 
 
 type alias WithWorld a =
     { a | world : ClientWorld }
+
+
+type alias WithPlayer a =
+    { a | player : ClientPlayer }
+
+
+type alias WithOtherPlayers a =
+    { a | otherPlayers : List ClientOtherPlayer }
 
 
 type alias WithMessageQueue a =
@@ -183,7 +191,9 @@ addFightMessages : WebData (WithFight a) -> Model -> Model
 addFightMessages response model =
     case response of
         Success { fight } ->
-            { model | messages = model.messages ++ fight.log }
+            fight
+                |> Maybe.map (\{ log } -> { model | messages = model.messages ++ log })
+                |> Maybe.withDefault model
 
         _ ->
             model
@@ -309,7 +319,7 @@ viewLoadedWorld : ClientWorld -> Html Msg
 viewLoadedWorld world =
     H.div []
         [ viewPlayer world.player
-        , viewOtherPlayers world.player.id world.otherPlayers
+        , viewOtherPlayers world
         ]
 
 
@@ -335,11 +345,11 @@ viewPlayer player =
         ]
 
 
-viewOtherPlayers : PlayerId -> List ClientOtherPlayer -> Html Msg
-viewOtherPlayers playerId players =
+viewOtherPlayers : WithPlayer (WithOtherPlayers a) -> Html Msg
+viewOtherPlayers { player, otherPlayers } =
     H.div []
         [ H.strong [] [ H.text "Other players:" ]
-        , if List.isEmpty players then
+        , if List.isEmpty otherPlayers then
             H.div [] [ H.text "There are none so far!" ]
           else
             H.table []
@@ -349,20 +359,24 @@ viewOtherPlayers playerId players =
                     , H.th [] [ H.text "XP" ]
                     , H.th [] []
                     ]
-                    :: List.map (viewOtherPlayer playerId) players
+                    :: List.map (viewOtherPlayer player) otherPlayers
                 )
         ]
 
 
-viewOtherPlayer : PlayerId -> ClientOtherPlayer -> Html Msg
-viewOtherPlayer playerId otherPlayer =
+viewOtherPlayer : ClientPlayer -> ClientOtherPlayer -> Html Msg
+viewOtherPlayer player otherPlayer =
     H.tr []
         [ H.td [] [ H.text (Shared.Player.idToString otherPlayer.id) ]
         , H.td [] [ H.text (String.fromInt otherPlayer.hp) ]
         , H.td [] [ H.text (String.fromInt otherPlayer.xp) ]
         , H.td []
             [ H.button
-                [ onClickRequest (Server.Route.Attack { you = playerId, them = otherPlayer.id }) ]
+                [ if player.hp > 0 && otherPlayer.hp > 0 then
+                    onClickRequest (Server.Route.Attack { you = player.id, them = otherPlayer.id })
+                  else
+                    HA.disabled True
+                ]
                 [ H.text "Attack!" ]
             ]
         ]

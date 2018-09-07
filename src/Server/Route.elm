@@ -69,7 +69,7 @@ type alias RefreshResponse =
 type alias AttackResponse =
     { world : ClientWorld
     , messageQueue : List String
-    , fight : Fight
+    , fight : Maybe Fight
     }
 
 
@@ -269,10 +269,10 @@ refreshDecoder =
 -- ATTACK
 
 
-attackResponse : List String -> PlayerId -> ServerWorld -> Fight -> Maybe AttackResponse
-attackResponse messageQueue playerId_ world fight =
+attackResponse : List String -> PlayerId -> ServerWorld -> Maybe Fight -> Maybe AttackResponse
+attackResponse messageQueue playerId_ world maybeFight =
     Shared.World.serverToClient playerId_ world
-        |> Maybe.map (\clientWorld -> AttackResponse clientWorld messageQueue fight)
+        |> Maybe.map (\clientWorld -> AttackResponse clientWorld messageQueue maybeFight)
 
 
 encodeAttack : AttackResponse -> JE.Value
@@ -280,7 +280,7 @@ encodeAttack { world, fight, messageQueue } =
     JE.object
         [ ( "world", Shared.World.encode world )
         , ( "messageQueue", Shared.MessageQueue.encode messageQueue )
-        , ( "fight", Shared.Fight.encode fight )
+        , ( "fight", Shared.Fight.encodeMaybe fight )
         ]
 
 
@@ -295,4 +295,4 @@ attackDecoder =
     JD.map3 AttackResponse
         (JD.field "world" Shared.World.decoder)
         (JD.field "messageQueue" Shared.MessageQueue.decoder)
-        (JD.field "fight" Shared.Fight.decoder)
+        (JD.field "fight" Shared.Fight.maybeDecoder)
