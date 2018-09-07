@@ -19,7 +19,7 @@ There is currently no hot reloading and if you really wanted, you could see the 
 > Roughly in the order of "I'd like to do this the most", `DESC`.
 
 - [x] Only fight when you have some HP
-- [ ] Time-based HP regeneration
+- [x] Time-based HP regeneration
 - [ ] Visibility of some "next tick in/at ..." information
 - [ ] Think about putting some "you've healed" msg to players' queues on each Heal tick
 - [ ] Levels
