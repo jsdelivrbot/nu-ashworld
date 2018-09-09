@@ -1,6 +1,7 @@
 module Server.World
     exposing
-        ( addPlayerMessage
+        ( DeadStatus(..)
+        , addPlayerMessage
         , addPlayerXp
         , emptyPlayerMessageQueue
         , healEverybody
@@ -50,18 +51,24 @@ healEverybody world =
 -- QUERIES
 
 
-{-|
+type DeadStatus
+    = PlayerDoesntExist
+    | Dead
+    | Alive
 
-  - Nothing == couldn't find the player
-  - Just False == not dead
-  - Just True == dead
 
--}
-isDead : PlayerId -> ServerWorld -> Maybe Bool
+isDead : PlayerId -> ServerWorld -> DeadStatus
 isDead playerId world =
     world.players
         |> Dict.get playerId
-        |> Maybe.map (\{ hp } -> hp == 0)
+        |> Maybe.map
+            (\{ hp } ->
+                if hp == 0 then
+                    Dead
+                else
+                    Alive
+            )
+        |> Maybe.withDefault PlayerDoesntExist
 
 
 

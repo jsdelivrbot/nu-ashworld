@@ -136,7 +136,7 @@ update msg model =
                         ( messageQueue, modelWithoutMessages ) =
                             getMessageQueue you model
                     in
-                    if Server.World.isDead you model.world == Just True then
+                    if Server.World.isDead you model.world == Server.World.Dead then
                         let
                             newMessageQueue : List String
                             newMessageQueue =
@@ -149,7 +149,7 @@ update msg model =
                                 |> Maybe.withDefault Server.Route.encodeAttackError
                             )
                         )
-                    else if Server.World.isDead them model.world == Just True then
+                    else if Server.World.isDead them model.world == Server.World.Dead then
                         let
                             newMessageQueue : List String
                             newMessageQueue =
