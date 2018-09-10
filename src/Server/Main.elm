@@ -1,6 +1,7 @@
 port module Server.Main exposing (main)
 
 import Dict.Any as Dict exposing (AnyDict)
+import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE
 import Platform
 import Server.Route exposing (Route(..))
@@ -21,16 +22,18 @@ port log : String -> Cmd msg
 -- HTTP
 
 
-port httpRequests : (String -> msg) -> Sub msg
+port httpRequests : (JE.Value -> msg) -> Sub msg
 
 
-port httpResponse : String -> Cmd msg
+port httpResponse : JE.Value -> Cmd msg
 
 
-sendHttpResponse : JE.Value -> Cmd msg
-sendHttpResponse value =
-    value
-        |> JE.encode 0
+sendHttpResponse : JE.Value -> JE.Value -> Cmd msg
+sendHttpResponse response value =
+    JE.list identity
+        [ response
+        , JE.string (JE.encode 0 value)
+        ]
         |> httpResponse
 
 
@@ -43,13 +46,16 @@ type alias Model =
     }
 
 
-type Url
-    = Url String
-
-
 type Msg
-    = UrlRequested Url
-    | HealTick Posix
+    = HealTick Posix
+    | HttpRequest HttpRequestData
+    | HttpRequestError JD.Error
+
+
+type alias HttpRequestData =
+    { url : String
+    , response : JE.Value
+    }
 
 
 main : Program Flags Model Msg
@@ -71,13 +77,13 @@ init flags =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        UrlRequested (Url url) ->
+        HttpRequest { url, response } ->
             case Server.Route.fromString url of
                 NotFound ->
                     ( model
                     , Cmd.batch
                         [ log ("NotFound: " ++ url)
-                        , sendHttpResponse (Server.Route.encodeNotFound url)
+                        , sendHttpResponse response (Server.Route.encodeNotFound url)
                         ]
                     )
 
@@ -98,7 +104,7 @@ update msg model =
                                 |> addPlayer newId newPlayer
                     in
                     ( newModel
-                    , sendHttpResponse
+                    , sendHttpResponse response
                         (Server.Route.signupResponse newId newModel.world
                             |> Maybe.map Server.Route.encodeSignup
                             |> Maybe.withDefault Server.Route.encodeSignupError
@@ -111,7 +117,7 @@ update msg model =
                             getMessageQueue playerId model
                     in
                     ( newModel
-                    , sendHttpResponse
+                    , sendHttpResponse response
                         (Server.Route.loginResponse messageQueue playerId newModel.world
                             |> Maybe.map Server.Route.encodeLogin
                             |> Maybe.withDefault Server.Route.encodeLoginError
@@ -124,7 +130,7 @@ update msg model =
                             getMessageQueue playerId model
                     in
                     ( newModel
-                    , sendHttpResponse
+                    , sendHttpResponse response
                         (Server.Route.refreshResponse messageQueue playerId newModel.world
                             |> Maybe.map Server.Route.encodeRefresh
                             |> Maybe.withDefault Server.Route.encodeRefreshError
@@ -143,7 +149,7 @@ update msg model =
                                 messageQueue ++ [ "You are dead, you can't fight." ]
                         in
                         ( modelWithoutMessages
-                        , sendHttpResponse
+                        , sendHttpResponse response
                             (Server.Route.attackResponse newMessageQueue you modelWithoutMessages.world Nothing
                                 |> Maybe.map Server.Route.encodeAttack
                                 |> Maybe.withDefault Server.Route.encodeAttackError
@@ -156,7 +162,7 @@ update msg model =
                                 messageQueue ++ [ "They are dead already. There's nothing else for you to do." ]
                         in
                         ( modelWithoutMessages
-                        , sendHttpResponse
+                        , sendHttpResponse response
                             (Server.Route.attackResponse newMessageQueue you modelWithoutMessages.world Nothing
                                 |> Maybe.map Server.Route.encodeAttack
                                 |> Maybe.withDefault Server.Route.encodeAttackError
@@ -188,12 +194,17 @@ update msg model =
                                     |> setWorld newWorld
                         in
                         ( newModel
-                        , sendHttpResponse
+                        , sendHttpResponse response
                             (Server.Route.attackResponse messageQueue you newModel.world (Just fight)
                                 |> Maybe.map Server.Route.encodeAttack
                                 |> Maybe.withDefault Server.Route.encodeAttackError
                             )
                         )
+
+        HttpRequestError error ->
+            ( model
+            , log "Server error"
+            )
 
         HealTick timeOfTick ->
             let
@@ -255,6 +266,21 @@ healTickTimeout =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ httpRequests (Url >> UrlRequested)
+        [ httpRequests
+            (\value ->
+                case JD.decodeValue httpRequestDecoder value of
+                    Ok result ->
+                        HttpRequest result
+
+                    Err error ->
+                        HttpRequestError error
+            )
         , Time.every healTickTimeout HealTick
         ]
+
+
+httpRequestDecoder : Decoder HttpRequestData
+httpRequestDecoder =
+    JD.map2 HttpRequestData
+        (JD.field "url" JD.string)
+        (JD.field "response" JD.value)
