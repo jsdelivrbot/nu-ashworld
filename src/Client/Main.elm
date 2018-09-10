@@ -16,7 +16,7 @@ import Server.Route
         , SignupResponse
         , toString
         )
-import Shared.Fight exposing (Fight, FightResult(..))
+import Shared.Fight exposing (Fight(..))
 import Shared.Level
 import Shared.MessageQueue
 import Shared.Player exposing (ClientOtherPlayer, ClientPlayer, PlayerId)
@@ -146,7 +146,6 @@ update msg model =
             ( model
                 |> updateWorld response
                 |> updateMessages response
-                |> addFightMessages response
             , Cmd.none
             )
 
@@ -186,18 +185,6 @@ updateMessages response model =
     response
         |> RemoteData.map (\{ messageQueue } -> { model | messages = model.messages ++ messageQueue })
         |> RemoteData.withDefault model
-
-
-addFightMessages : WebData (WithFight a) -> Model -> Model
-addFightMessages response model =
-    case response of
-        Success { fight } ->
-            fight
-                |> Maybe.map (\{ log } -> { model | messages = model.messages ++ log })
-                |> Maybe.withDefault model
-
-        _ ->
-            model
 
 
 setWorldAsLoading : Model -> Model

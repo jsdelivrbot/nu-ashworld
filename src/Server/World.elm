@@ -1,6 +1,7 @@
 module Server.World
     exposing
         ( addPlayerMessage
+        , addPlayerMessages
         , addPlayerXp
         , emptyPlayerMessageQueue
         , healEverybody
@@ -9,6 +10,7 @@ module Server.World
         )
 
 import Dict.Any as Dict
+import Shared.Level
 import Shared.Player exposing (PlayerId, ServerPlayer)
 import Shared.World exposing (ServerWorld)
 
@@ -16,22 +18,55 @@ import Shared.World exposing (ServerWorld)
 -- COMMANDS
 
 
-setPlayerHp : Int -> PlayerId -> ServerWorld -> ServerWorld
-setPlayerHp newHp playerId world =
+setPlayerHp : PlayerId -> Int -> ServerWorld -> ServerWorld
+setPlayerHp playerId newHp world =
     world
         |> update playerId (Maybe.map (\player -> { player | hp = newHp }))
 
 
-addPlayerXp : Int -> PlayerId -> ServerWorld -> ServerWorld
-addPlayerXp addedXp playerId world =
+addPlayerXp : PlayerId -> Int -> ServerWorld -> ServerWorld
+addPlayerXp playerId gainedXp world =
     world
-        |> update playerId (Maybe.map (\player -> { player | xp = player.xp + addedXp }))
+        |> update playerId
+            (Maybe.map
+                (\player ->
+                    let
+                        newXp =
+                            player.xp + gainedXp
+
+                        oldLevel =
+                            Shared.Level.levelForXp player.xp
+
+                        newLevel =
+                            Shared.Level.levelForXp newXp
+
+                        levelUpMessages =
+                            List.range (oldLevel + 1) newLevel
+                                |> List.map levelUpMessage
+
+                        newMessages =
+                            gainedXpMessage gainedXp :: levelUpMessages
+
+                        newMessageQueue =
+                            player.messageQueue ++ newMessages
+                    in
+                    { player
+                        | xp = newXp
+                        , messageQueue = newMessageQueue
+                    }
+                )
+            )
 
 
-addPlayerMessage : String -> PlayerId -> ServerWorld -> ServerWorld
-addPlayerMessage message playerId world =
+addPlayerMessage : PlayerId -> String -> ServerWorld -> ServerWorld
+addPlayerMessage playerId message world =
+    addPlayerMessages playerId [ message ] world
+
+
+addPlayerMessages : PlayerId -> List String -> ServerWorld -> ServerWorld
+addPlayerMessages playerId messages world =
     world
-        |> update playerId (Maybe.map (\player -> { player | messageQueue = player.messageQueue ++ [ message ] }))
+        |> update playerId (Maybe.map (\player -> { player | messageQueue = player.messageQueue ++ messages }))
 
 
 emptyPlayerMessageQueue : PlayerId -> ServerWorld -> ServerWorld
@@ -77,6 +112,20 @@ deadStatus playerId world =
                     Alive
             )
         |> Maybe.withDefault PlayerDoesntExist
+
+
+gainedXpMessage : Int -> String
+gainedXpMessage gainedXp =
+    "You gained "
+        ++ String.fromInt gainedXp
+        ++ " XP!"
+
+
+levelUpMessage : Int -> String
+levelUpMessage level =
+    "You gained a level! You're now level "
+        ++ String.fromInt level
+        ++ "!"
 
 
 update : PlayerId -> (Maybe ServerPlayer -> Maybe ServerPlayer) -> ServerWorld -> ServerWorld

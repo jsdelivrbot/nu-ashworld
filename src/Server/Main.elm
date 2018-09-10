@@ -6,7 +6,7 @@ import Json.Encode as JE
 import Platform
 import Server.Route exposing (AttackData, Route(..))
 import Server.World
-import Shared.Fight exposing (Fight, FightResult(..))
+import Shared.Fight exposing (Fight(..))
 import Shared.Player exposing (PlayerId, ServerPlayer)
 import Shared.World exposing (ServerWorld)
 import Time exposing (Posix)
@@ -259,31 +259,44 @@ handleAttackThemDead { you, them } response model =
 handleAttackNobodyDead : AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleAttackNobodyDead { you, them } response model =
     let
-        ( messageQueue, modelWithoutMessages ) =
-            getMessageQueue you model
-
         fight : Fight
         fight =
             -- TODO randomize
-            { log =
-                [ "With your admin powers, you one-shot the other player. This is boring."
-                , "The other player dies."
-                , "You won!"
-                ]
-            , result = YouWon
-            }
+            YouWon
 
         newWorld : ServerWorld
         newWorld =
-            modelWithoutMessages.world
-                |> Server.World.setPlayerHp 0 them
-                |> Server.World.addPlayerXp 10 you
-                |> Server.World.addPlayerMessage ("Player #" ++ Shared.Player.idToString you ++ " fought you and killed you!") them
+            case fight of
+                YouWon ->
+                    model.world
+                        |> Server.World.addPlayerMessages you
+                            [ "With your admin powers, you one-shot the other player. This is boring."
+                            , "The other player dies."
+                            , "You won!"
+                            ]
+                        |> Server.World.addPlayerMessage them
+                            ("Player #" ++ Shared.Player.idToString you ++ " fought you and killed you!")
+                        |> Server.World.setPlayerHp them 0
+                        |> Server.World.addPlayerXp you 10
 
-        newModel : Model
-        newModel =
-            modelWithoutMessages
+                YouLost ->
+                    model.world
+                        |> Server.World.addPlayerMessages you
+                            [ "Even though you tried your best, you couldn't kill the other player."
+                            , "You die!"
+                            ]
+                        |> Server.World.addPlayerMessage them
+                            ("Player #" ++ Shared.Player.idToString you ++ " fought you but you managed to kill them!")
+                        |> Server.World.setPlayerHp you 0
+                        |> Server.World.addPlayerXp them 5
+
+        modelAfterFight : Model
+        modelAfterFight =
+            model
                 |> setWorld newWorld
+
+        ( messageQueue, newModel ) =
+            getMessageQueue you modelAfterFight
     in
     ( newModel
     , sendHttpResponse response
