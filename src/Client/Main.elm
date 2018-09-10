@@ -365,7 +365,7 @@ viewOtherPlayers { player, otherPlayers } =
                 (H.tr []
                     [ H.th [] [ H.text "Player" ]
                     , H.th [] [ H.text "HP" ]
-                    , H.th [] [ H.text "XP" ]
+                    , H.th [] [ H.text "Level" ]
                     , H.th [] []
                     ]
                     :: List.map (viewOtherPlayer player) otherPlayers
@@ -378,7 +378,7 @@ viewOtherPlayer player otherPlayer =
     H.tr []
         [ H.td [] [ H.text (Shared.Player.idToString otherPlayer.id) ]
         , H.td [] [ H.text (String.fromInt otherPlayer.hp) ]
-        , H.td [] [ H.text (String.fromInt otherPlayer.xp) ]
+        , H.td [] [ H.text (String.fromInt (Shared.Level.levelForXp otherPlayer.xp)) ]
         , H.td []
             [ H.button
                 [ if player.hp > 0 && otherPlayer.hp > 0 then
