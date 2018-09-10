@@ -21,7 +21,6 @@ There is currently no hot reloading and if you really wanted, you could see the 
 - [x] Only fight when you have some HP
 - [x] Time-based HP regeneration
 - [x] Investigate and fix the race condition for multiple HTTP responses of the server. (IDs?)
-
 - [x] Levels
 - [x] Level up messages
 - [ ] Randomized fight
