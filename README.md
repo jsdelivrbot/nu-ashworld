@@ -22,7 +22,8 @@ There is currently no hot reloading and if you really wanted, you could see the 
 - [x] Time-based HP regeneration
 - [x] Investigate and fix the race condition for multiple HTTP responses of the server. (IDs?)
 
-- [ ] Levels
+- [x] Levels
+- [ ] Level up messages
 - [ ] Visibility of some "next tick in/at ..." information
 - [ ] Think about putting some "you've healed" msg to players' queues on each Heal tick
 - [ ] Design (that Adminator bootstrap template looks nice, but it's 1MB, blah. Do it myself? And in black/green FO2 theme? And with FO2 fonts? YESSS)

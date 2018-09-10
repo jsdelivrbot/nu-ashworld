@@ -17,6 +17,7 @@ import Server.Route
         , toString
         )
 import Shared.Fight exposing (Fight, FightResult(..))
+import Shared.Level
 import Shared.MessageQueue
 import Shared.Player exposing (ClientOtherPlayer, ClientPlayer, PlayerId)
 import Shared.World exposing (ClientWorld)
@@ -339,8 +340,16 @@ viewPlayer player =
             , H.td [] [ H.text (String.fromInt player.hp ++ "/" ++ String.fromInt player.maxHp) ]
             ]
         , H.tr []
-            [ H.th [] [ H.text "XP" ]
-            , H.td [] [ H.text (String.fromInt player.xp) ]
+            [ H.th [] [ H.text "Level" ]
+            , H.td []
+                [ H.text <|
+                    String.fromInt (Shared.Level.levelForXp player.xp)
+                        ++ " ("
+                        ++ String.fromInt player.xp
+                        ++ " XP, "
+                        ++ String.fromInt (Shared.Level.xpToNextLevel player.xp)
+                        ++ " till the next level)"
+                ]
             ]
         ]
 
