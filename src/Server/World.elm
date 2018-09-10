@@ -1,7 +1,6 @@
 module Server.World
     exposing
-        ( DeadStatus(..)
-        , addPlayerMessage
+        ( addPlayerMessage
         , addPlayerXp
         , emptyPlayerMessageQueue
         , healEverybody
@@ -57,8 +56,17 @@ type DeadStatus
     | Alive
 
 
-isDead : PlayerId -> ServerWorld -> DeadStatus
+isDead : PlayerId -> ServerWorld -> Bool
 isDead playerId world =
+    deadStatus playerId world == Dead
+
+
+
+-- HELPERS
+
+
+deadStatus : PlayerId -> ServerWorld -> DeadStatus
+deadStatus playerId world =
     world.players
         |> Dict.get playerId
         |> Maybe.map
@@ -69,10 +77,6 @@ isDead playerId world =
                     Alive
             )
         |> Maybe.withDefault PlayerDoesntExist
-
-
-
--- HELPERS
 
 
 update : PlayerId -> (Maybe ServerPlayer -> Maybe ServerPlayer) -> ServerWorld -> ServerWorld

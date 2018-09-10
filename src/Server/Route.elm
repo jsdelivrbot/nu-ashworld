@@ -1,6 +1,7 @@
 module Server.Route
     exposing
-        ( AttackResponse
+        ( AttackData
+        , AttackResponse
         , LoginResponse
         , RefreshResponse
         , Route(..)
@@ -42,10 +43,13 @@ type Route
     | Signup
     | Login PlayerId
     | Refresh PlayerId
-    | Attack
-        { you : PlayerId
-        , them : PlayerId
-        }
+    | Attack AttackData
+
+
+type alias AttackData =
+    { you : PlayerId
+    , them : PlayerId
+    }
 
 
 type alias SignupResponse =

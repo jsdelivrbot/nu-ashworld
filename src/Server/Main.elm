@@ -4,7 +4,7 @@ import Dict.Any as Dict exposing (AnyDict)
 import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE
 import Platform
-import Server.Route exposing (Route(..))
+import Server.Route exposing (AttackData, Route(..))
 import Server.World
 import Shared.Fight exposing (Fight, FightResult(..))
 import Shared.Player exposing (PlayerId, ServerPlayer)
@@ -35,6 +35,10 @@ sendHttpResponse response value =
         , JE.string (JE.encode 0 value)
         ]
         |> httpResponse
+
+
+
+-- TYPES
 
 
 type alias Flags =
@@ -80,126 +84,19 @@ update msg model =
         HttpRequest { url, response } ->
             case Server.Route.fromString url of
                 NotFound ->
-                    ( model
-                    , Cmd.batch
-                        [ log ("NotFound: " ++ url)
-                        , sendHttpResponse response (Server.Route.encodeNotFound url)
-                        ]
-                    )
+                    handleNotFound url response model
 
                 Signup ->
-                    let
-                        newId : PlayerId
-                        newId =
-                            Dict.size model.world.players
-                                |> Shared.Player.id
-
-                        newPlayer : ServerPlayer
-                        newPlayer =
-                            Shared.Player.init newId
-
-                        newModel : Model
-                        newModel =
-                            model
-                                |> addPlayer newId newPlayer
-                    in
-                    ( newModel
-                    , sendHttpResponse response
-                        (Server.Route.signupResponse newId newModel.world
-                            |> Maybe.map Server.Route.encodeSignup
-                            |> Maybe.withDefault Server.Route.encodeSignupError
-                        )
-                    )
+                    handleSignup response model
 
                 Login playerId ->
-                    let
-                        ( messageQueue, newModel ) =
-                            getMessageQueue playerId model
-                    in
-                    ( newModel
-                    , sendHttpResponse response
-                        (Server.Route.loginResponse messageQueue playerId newModel.world
-                            |> Maybe.map Server.Route.encodeLogin
-                            |> Maybe.withDefault Server.Route.encodeLoginError
-                        )
-                    )
+                    handleLogin playerId response model
 
                 Refresh playerId ->
-                    let
-                        ( messageQueue, newModel ) =
-                            getMessageQueue playerId model
-                    in
-                    ( newModel
-                    , sendHttpResponse response
-                        (Server.Route.refreshResponse messageQueue playerId newModel.world
-                            |> Maybe.map Server.Route.encodeRefresh
-                            |> Maybe.withDefault Server.Route.encodeRefreshError
-                        )
-                    )
+                    handleRefresh playerId response model
 
-                Attack { you, them } ->
-                    let
-                        ( messageQueue, modelWithoutMessages ) =
-                            getMessageQueue you model
-                    in
-                    if Server.World.isDead you model.world == Server.World.Dead then
-                        let
-                            newMessageQueue : List String
-                            newMessageQueue =
-                                messageQueue ++ [ "You are dead, you can't fight." ]
-                        in
-                        ( modelWithoutMessages
-                        , sendHttpResponse response
-                            (Server.Route.attackResponse newMessageQueue you modelWithoutMessages.world Nothing
-                                |> Maybe.map Server.Route.encodeAttack
-                                |> Maybe.withDefault Server.Route.encodeAttackError
-                            )
-                        )
-                    else if Server.World.isDead them model.world == Server.World.Dead then
-                        let
-                            newMessageQueue : List String
-                            newMessageQueue =
-                                messageQueue ++ [ "They are dead already. There's nothing else for you to do." ]
-                        in
-                        ( modelWithoutMessages
-                        , sendHttpResponse response
-                            (Server.Route.attackResponse newMessageQueue you modelWithoutMessages.world Nothing
-                                |> Maybe.map Server.Route.encodeAttack
-                                |> Maybe.withDefault Server.Route.encodeAttackError
-                            )
-                        )
-                    else
-                        let
-                            fight : Fight
-                            fight =
-                                -- TODO randomize
-                                { log =
-                                    [ "With your admin powers, you one-shot the other player. This is boring."
-                                    , "The other player dies."
-                                    , "You won!"
-                                    ]
-                                , result = YouWon
-                                }
-
-                            newWorld : ServerWorld
-                            newWorld =
-                                modelWithoutMessages.world
-                                    |> Server.World.setPlayerHp 0 them
-                                    |> Server.World.addPlayerXp 10 you
-                                    |> Server.World.addPlayerMessage ("Player #" ++ Shared.Player.idToString you ++ " fought you and killed you!") them
-
-                            newModel : Model
-                            newModel =
-                                modelWithoutMessages
-                                    |> setWorld newWorld
-                        in
-                        ( newModel
-                        , sendHttpResponse response
-                            (Server.Route.attackResponse messageQueue you newModel.world (Just fight)
-                                |> Maybe.map Server.Route.encodeAttack
-                                |> Maybe.withDefault Server.Route.encodeAttackError
-                            )
-                        )
+                Attack attackData ->
+                    handleAttack attackData response model
 
         HttpRequestError error ->
             ( model
@@ -243,6 +140,158 @@ getMessageQueue id model =
                 |> setWorld newWorld
     in
     ( queue, newModel )
+
+
+handleNotFound : String -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleNotFound url response model =
+    ( model
+    , Cmd.batch
+        [ log ("NotFound: " ++ url)
+        , sendHttpResponse response (Server.Route.encodeNotFound url)
+        ]
+    )
+
+
+handleSignup : JE.Value -> Model -> ( Model, Cmd Msg )
+handleSignup response model =
+    let
+        newId : PlayerId
+        newId =
+            Dict.size model.world.players
+                |> Shared.Player.id
+
+        newPlayer : ServerPlayer
+        newPlayer =
+            Shared.Player.init newId
+
+        newModel : Model
+        newModel =
+            model
+                |> addPlayer newId newPlayer
+    in
+    ( newModel
+    , sendHttpResponse response
+        (Server.Route.signupResponse newId newModel.world
+            |> Maybe.map Server.Route.encodeSignup
+            |> Maybe.withDefault Server.Route.encodeSignupError
+        )
+    )
+
+
+handleLogin : PlayerId -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleLogin playerId response model =
+    let
+        ( messageQueue, newModel ) =
+            getMessageQueue playerId model
+    in
+    ( newModel
+    , sendHttpResponse response
+        (Server.Route.loginResponse messageQueue playerId newModel.world
+            |> Maybe.map Server.Route.encodeLogin
+            |> Maybe.withDefault Server.Route.encodeLoginError
+        )
+    )
+
+
+handleRefresh : PlayerId -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleRefresh playerId response model =
+    let
+        ( messageQueue, newModel ) =
+            getMessageQueue playerId model
+    in
+    ( newModel
+    , sendHttpResponse response
+        (Server.Route.refreshResponse messageQueue playerId newModel.world
+            |> Maybe.map Server.Route.encodeRefresh
+            |> Maybe.withDefault Server.Route.encodeRefreshError
+        )
+    )
+
+
+handleAttack : AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleAttack ({ you, them } as attackData) response model =
+    if Server.World.isDead you model.world then
+        handleAttackYouDead attackData response model
+    else if Server.World.isDead them model.world then
+        handleAttackThemDead attackData response model
+    else
+        handleAttackNobodyDead attackData response model
+
+
+handleAttackYouDead : AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleAttackYouDead { you } response model =
+    let
+        ( messageQueue, modelWithoutMessages ) =
+            getMessageQueue you model
+
+        newMessageQueue : List String
+        newMessageQueue =
+            messageQueue ++ [ "You are dead, you can't fight." ]
+    in
+    ( modelWithoutMessages
+    , sendHttpResponse response
+        (Server.Route.attackResponse newMessageQueue you modelWithoutMessages.world Nothing
+            |> Maybe.map Server.Route.encodeAttack
+            |> Maybe.withDefault Server.Route.encodeAttackError
+        )
+    )
+
+
+handleAttackThemDead : AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleAttackThemDead { you, them } response model =
+    let
+        ( messageQueue, modelWithoutMessages ) =
+            getMessageQueue you model
+
+        newMessageQueue : List String
+        newMessageQueue =
+            messageQueue ++ [ "They are dead already. There's nothing else for you to do." ]
+    in
+    ( modelWithoutMessages
+    , sendHttpResponse response
+        (Server.Route.attackResponse newMessageQueue you modelWithoutMessages.world Nothing
+            |> Maybe.map Server.Route.encodeAttack
+            |> Maybe.withDefault Server.Route.encodeAttackError
+        )
+    )
+
+
+handleAttackNobodyDead : AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleAttackNobodyDead { you, them } response model =
+    let
+        ( messageQueue, modelWithoutMessages ) =
+            getMessageQueue you model
+
+        fight : Fight
+        fight =
+            -- TODO randomize
+            { log =
+                [ "With your admin powers, you one-shot the other player. This is boring."
+                , "The other player dies."
+                , "You won!"
+                ]
+            , result = YouWon
+            }
+
+        newWorld : ServerWorld
+        newWorld =
+            modelWithoutMessages.world
+                |> Server.World.setPlayerHp 0 them
+                |> Server.World.addPlayerXp 10 you
+                |> Server.World.addPlayerMessage ("Player #" ++ Shared.Player.idToString you ++ " fought you and killed you!") them
+
+        newModel : Model
+        newModel =
+            modelWithoutMessages
+                |> setWorld newWorld
+    in
+    ( newModel
+    , sendHttpResponse response
+        (Server.Route.attackResponse messageQueue you newModel.world (Just fight)
+            |> Maybe.map Server.Route.encodeAttack
+            |> Maybe.withDefault Server.Route.encodeAttackError
+        )
+    )
 
 
 setWorld : ServerWorld -> Model -> Model
