@@ -1,7 +1,7 @@
 const http = require('http');
 const Elm = require('./elm-server.js').Elm;
 
-const port = 3333;
+const port = process.env.PORT || 3333;
 
 const app = Elm.Server.Main.init();
 
