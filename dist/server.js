@@ -4,6 +4,7 @@ const Elm = require('./elm-server.js').Elm;
 
 const webServerPort = process.env.PORT || 5000;
 const gameServerPort = 3333;
+const host = process.env.HOST || 'http://localhost';
 
 const app = Elm.Server.Main.init();
 
@@ -21,7 +22,7 @@ app.ports.httpResponse.subscribe(([response, responseString]) => {
 
 http.createServer((request, response) => {
     app.ports.httpRequests.send({
-        url: `http://localhost:${gameServerPort}${request.url}`,
+        url: `${host}:${gameServerPort}${request.url}`,
         response,
     });
 }).listen(gameServerPort);
