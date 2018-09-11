@@ -10,13 +10,14 @@
     "format": "elm-format --yes src",
     "start:client": "yarn build:client && cd dist && live-server --port=4444 --watch=index.html,elm-client.js",
     "start:server": "yarn build:server && cd dist && nodemon -w server.js -w elm-server.js server.js",
-    "start": "node run build:server && node dist/server.js"
+    "start": "yarn build && node dist/server.js"
   },
   "main": "dist/server.js",
   "engines": {
     "node": "10.6.0"
   },
   "dependencies": {
+    "express": "^4.16.3",
     "live-server": "^1.2.0",
     "nodemon": "^1.18.4"
   },

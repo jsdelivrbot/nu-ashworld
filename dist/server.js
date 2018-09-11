@@ -1,7 +1,9 @@
 const http = require('http');
+const express = require('express');
 const Elm = require('./elm-server.js').Elm;
 
-const port = process.env.PORT || 3333;
+const webServerPort = process.env.PORT || 5000;
+const gameServerPort = 3333;
 
 const app = Elm.Server.Main.init();
 
@@ -19,9 +21,17 @@ app.ports.httpResponse.subscribe(([response, responseString]) => {
 
 http.createServer((request, response) => {
     app.ports.httpRequests.send({
-        url: `http://localhost:${port}${request.url}`,
+        url: `http://localhost:${gameServerPort}${request.url}`,
         response,
     });
-}).listen(port);
+}).listen(gameServerPort);
 
-console.log(`[NODE] Server started on port ${port}`);
+console.log(`[NODE] Game server started on port ${gameServerPort}`);
+
+express()
+  .use(express.static(__dirname))
+  .listen(webServerPort, () => console.log(`[NODE] Web server started on port ${webServerPort}`));
+  //.get('/', (req, res) => res.render(''))
+//http.createServer((request, response) => {
+//    
+//}).listen(webServerPort);
