@@ -24,19 +24,16 @@ import Shared.World exposing (ClientWorld)
 import Url exposing (Url)
 
 
-serverEndpoint : String
-serverEndpoint =
-    "http://localhost:3333"
-
-
 type alias Flags =
-    ()
+    { serverEndpoint : String
+    }
 
 
 type alias Model =
     { navigationKey : Browser.Navigation.Key
     , messages : List String
     , world : WebData ClientWorld
+    , serverEndpoint : String
     }
 
 
@@ -68,6 +65,7 @@ init flags url key =
     ( { navigationKey = key
       , messages = []
       , world = NotAsked
+      , serverEndpoint = flags.serverEndpoint
       }
     , Cmd.none
     )
@@ -99,25 +97,25 @@ update msg model =
         Request (Server.Route.Signup as route) ->
             ( model
                 |> setWorldAsLoading
-            , sendRequest route
+            , sendRequest model.serverEndpoint route
             )
 
         Request ((Server.Route.Login playerId) as route) ->
             ( model
                 |> setWorldAsLoading
-            , sendRequest route
+            , sendRequest model.serverEndpoint route
             )
 
         Request ((Server.Route.Attack otherPlayerId) as route) ->
             ( model
                 |> setWorldAsLoading
-            , sendRequest route
+            , sendRequest model.serverEndpoint route
             )
 
         Request ((Server.Route.Refresh playerId) as route) ->
             ( model
                 |> setWorldAsLoading
-            , sendRequest route
+            , sendRequest model.serverEndpoint route
             )
 
         GetSignupResponse response ->
@@ -202,8 +200,8 @@ addMessages messages model =
     { model | messages = model.messages ++ messages }
 
 
-sendRequest : Server.Route.Route -> Cmd Msg
-sendRequest route =
+sendRequest : String -> Server.Route.Route -> Cmd Msg
+sendRequest serverEndpoint route =
     let
         send : (WebData a -> Msg) -> Decoder a -> Cmd Msg
         send tagger decoder =
@@ -211,21 +209,21 @@ sendRequest route =
                 |> RemoteData.sendRequest
                 |> Cmd.map tagger
     in
-    case route of
-        Server.Route.NotFound ->
-            send (\_ -> NoOp) (JD.fail "Server route not found")
+        case route of
+            Server.Route.NotFound ->
+                send (\_ -> NoOp) (JD.fail "Server route not found")
 
-        Server.Route.Signup ->
-            send GetSignupResponse Server.Route.signupDecoder
+            Server.Route.Signup ->
+                send GetSignupResponse Server.Route.signupDecoder
 
-        Server.Route.Login _ ->
-            send GetLoginResponse Server.Route.loginDecoder
+            Server.Route.Login _ ->
+                send GetLoginResponse Server.Route.loginDecoder
 
-        Server.Route.Refresh _ ->
-            send GetRefreshResponse Server.Route.refreshDecoder
+            Server.Route.Refresh _ ->
+                send GetRefreshResponse Server.Route.refreshDecoder
 
-        Server.Route.Attack _ ->
-            send GetAttackResponse Server.Route.attackDecoder
+            Server.Route.Attack _ ->
+                send GetAttackResponse Server.Route.attackDecoder
 
 
 subscriptions : Model -> Sub Msg
