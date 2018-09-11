@@ -6,9 +6,7 @@ const webServerPort = process.env.PORT || 5000;
 const gameServerPort = 3333;
 const host = process.env.HOST || 'http://localhost';
 
-const app = Elm.Server.Main.init({
-    serverEndpoint: host,
-});
+const app = Elm.Server.Main.init();
 
 app.ports.log.subscribe(msg => {
     console.log(`[ELM ] ${msg}`);

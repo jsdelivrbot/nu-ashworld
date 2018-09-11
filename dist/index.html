@@ -6,7 +6,11 @@
     <body>
         <script src="elm-client.js"></script>
         <script>
-            var app = Elm.Client.Main.init();
+            var app = Elm.Client.Main.init({
+                flags: {
+                    serverEndpoint: host,
+                },
+            });
         </script>
     </body>
 </html>
