@@ -4,11 +4,11 @@
         <meta charset="utf-8">
     </head>
     <body>
-        <script src="elm-client.js"></script>
+        <script src="dist/elm-client.js"></script>
         <script>
             var app = Elm.Client.Main.init({
                 flags: {
-                    serverEndpoint: '<%= host %>',
+                    serverEndpoint: 'https://nu-ashworld.herokuapp.com',
                 },
             });
         </script>
