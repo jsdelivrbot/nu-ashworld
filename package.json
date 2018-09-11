@@ -17,10 +17,11 @@
     "node": "10.6.0"
   },
   "dependencies": {
+    "ejs": "^2.6.1",
+    "elm": "^0.19.0-bugfix2",
+    "elm-format": "^0.8.0",
     "express": "^4.16.3",
     "live-server": "^1.2.0",
-    "nodemon": "^1.18.4",
-    "elm": "^0.19.0-bugfix2",
-    "elm-format": "^0.8.0"
+    "nodemon": "^1.18.4"
   }
 }
