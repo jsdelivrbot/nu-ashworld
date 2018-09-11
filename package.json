@@ -1,13 +1,13 @@
 {
   "license": "UNLICENSED",
   "scripts": {
-    "build:client": "yarn elm make --optimize src/Client/Main.elm --output dist/elm-client.js",
-    "build:client:debug": "yarn elm make --debug src/Client/Main.elm --output dist/elm-client.js",
-    "build:server": "yarn elm make --optimize src/Server/Main.elm --output dist/elm-server.js",
-    "build:server:debug": "yarn elm make --debug src/Server/Main.elm --output dist/elm-server.js",
+    "build:client": "node_modules/.bin/elm make --optimize src/Client/Main.elm --output dist/elm-client.js",
+    "build:client:debug": "node_modules/.bin/elm make --debug src/Client/Main.elm --output dist/elm-client.js",
+    "build:server": "node_modules/.bin/elm make --optimize src/Server/Main.elm --output dist/elm-server.js",
+    "build:server:debug": "node_modules/.bin/elm make --debug src/Server/Main.elm --output dist/elm-server.js",
     "build": "yarn build:client && yarn build:server",
     "build:debug": "yarn build:client:debug && yarn build:server:debug",
-    "format": "yarn elm-format --yes src",
+    "format": "node_modules/.bin/elm-format --yes src",
     "start:client": "yarn build:client && cd dist && live-server --port=4444 --watch=index.html,elm-client.js",
     "start:server": "yarn build:server && cd dist && nodemon -w server.js -w elm-server.js server.js",
     "start": "yarn build && node dist/server.js"
