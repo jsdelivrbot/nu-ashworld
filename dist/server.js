@@ -4,6 +4,7 @@ const Elm = require('./elm-server.js').Elm;
 
 const port = process.env.PORT || 5000;
 const host = process.env.HOST || 'http://localhost';
+const newRelicLicenseKey = process.env.NEW_RELIC_LICENSE_KEY || null;
 
 const app = Elm.Server.Main.init();
 
@@ -27,3 +28,7 @@ http.createServer((request, response) => {
 }).listen(port);
 
 console.log(`[NODE] Game server started on port ${port}`);
+
+if (newRelicLicenseKey) {
+  require('newrelic');
+}
