@@ -770,11 +770,11 @@ function _Debug_crash_UNUSED(identifier, fact1, fact2, fact3, fact4)
 
 function _Debug_regionToString(region)
 {
-	if (region.Y.F === region.ae.F)
+	if (region.Z.F === region.af.F)
 	{
-		return 'on line ' + region.Y.F;
+		return 'on line ' + region.Z.F;
 	}
-	return 'on lines ' + region.Y.F + ' through ' + region.ae.F;
+	return 'on lines ' + region.Z.F + ' through ' + region.af.F;
 }
 
 
@@ -2366,9 +2366,9 @@ function _Http_configureRequest(xhr, request)
 	}
 
 	xhr.responseType = request.S.b;
-	xhr.withCredentials = request.aa;
+	xhr.withCredentials = request.ab;
 
-	elm$core$Maybe$isJust(request._) && (xhr.timeout = request._.a);
+	elm$core$Maybe$isJust(request.aa) && (xhr.timeout = request.aa.a);
 }
 
 
@@ -2826,8 +2826,8 @@ var _VirtualDom_mapEventRecord = F2(function(func, record)
 {
 	return {
 		m: func(record.m),
-		Z: record.Z,
-		X: record.X
+		_: record._,
+		Y: record.Y
 	}
 });
 
@@ -3096,10 +3096,10 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 
 		var value = result.a;
 		var message = !tag ? value : tag < 3 ? value.a : value.m;
-		var stopPropagation = tag == 1 ? value.b : tag == 3 && value.Z;
+		var stopPropagation = tag == 1 ? value.b : tag == 3 && value._;
 		var currentEventNode = (
 			stopPropagation && event.stopPropagation(),
-			(tag == 2 ? value.b : tag == 3 && value.X) && event.preventDefault(),
+			(tag == 2 ? value.b : tag == 3 && value.Y) && event.preventDefault(),
 			eventNode
 		);
 		var tagger;
@@ -4172,7 +4172,7 @@ function _Browser_application(impl)
 					sendToApp(onUrlRequest(
 						(next
 							&& curr.at === next.at
-							&& curr.ai === next.ai
+							&& curr.aj === next.aj
 							&& curr.aq.a === next.aq.a
 						)
 							? elm$browser$Browser$Internal(next)
@@ -4954,7 +4954,7 @@ var krisajenkins$remotedata$RemoteData$NotAsked = {$: 0};
 var author$project$Client$Main$init = F3(
 	function (flags, url, key) {
 		return _Utils_Tuple2(
-			{n: _List_Nil, al: key, i: flags.i, u: krisajenkins$remotedata$RemoteData$NotAsked},
+			{n: _List_Nil, am: key, i: flags.i, u: krisajenkins$remotedata$RemoteData$NotAsked},
 			elm$core$Platform$Cmd$none);
 	});
 var elm$core$Platform$Sub$batch = _Platform_batch;
@@ -4998,7 +4998,7 @@ var author$project$Client$Main$GetSignupResponse = function (a) {
 var author$project$Client$Main$NoOp = {$: 0};
 var author$project$Server$Route$AttackResponse = F3(
 	function (world, messageQueue, fight) {
-		return {ag: fight, aQ: messageQueue, u: world};
+		return {ah: fight, aQ: messageQueue, u: world};
 	});
 var author$project$Shared$Fight$YouLost = 1;
 var author$project$Shared$Fight$YouWon = 0;
@@ -5841,9 +5841,9 @@ var elm$http$Http$get = F2(
 				S: elm$http$Http$expectJson(decoder),
 				N: _List_Nil,
 				U: 'GET',
-				_: elm$core$Maybe$Nothing,
+				aa: elm$core$Maybe$Nothing,
 				a1: url,
-				aa: false
+				ab: false
 			});
 	});
 var elm$core$Basics$composeL = F3(
@@ -6685,7 +6685,7 @@ var elm$core$String$contains = _String_contains;
 var elm$core$String$toInt = _String_toInt;
 var elm$url$Url$Url = F6(
 	function (protocol, host, port_, path, query, fragment) {
-		return {ah: fragment, ai: host, an: path, aq: port_, at: protocol, au: query};
+		return {ai: fragment, aj: host, ao: path, aq: port_, at: protocol, au: query};
 	});
 var elm$url$Url$chompBeforePath = F5(
 	function (protocol, path, params, frag, str) {

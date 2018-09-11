@@ -5,6 +5,8 @@ module Shared.World
         , decoder
         , encode
         , encodeMaybe
+        , encodeServer
+        , serverDecoder
         , serverToClient
         )
 
@@ -74,3 +76,53 @@ decoder =
     JD.map2 ClientWorld
         (JD.field "player" Shared.Player.decoder)
         (JD.field "otherPlayers" (JD.list Shared.Player.otherPlayerDecoder))
+
+
+encodeServer : ServerWorld -> JE.Value
+encodeServer world =
+    JE.object
+        [ ( "players"
+          , encodeAnyDict
+                Shared.Player.encodeId
+                Shared.Player.encodeServer
+                world.players
+          )
+        ]
+
+
+encodeAnyDict : (a -> JE.Value) -> (b -> JE.Value) -> AnyDict comparable a b -> JE.Value
+encodeAnyDict encodeKey encodeValue dict =
+    let
+        encodeTuple : ( a, b ) -> JE.Value
+        encodeTuple ( key, value ) =
+            JE.list identity
+                [ encodeKey key
+                , encodeValue value
+                ]
+    in
+    JE.list encodeTuple (Dict.toList dict)
+
+
+serverDecoder : Decoder ServerWorld
+serverDecoder =
+    JD.map ServerWorld
+        (JD.field "players"
+            (anyDictDecoder
+                Shared.Player.idToInt
+                Shared.Player.idDecoder
+                Shared.Player.serverDecoder
+            )
+        )
+
+
+anyDictDecoder : (a -> comparable) -> Decoder a -> Decoder b -> Decoder (AnyDict comparable a b)
+anyDictDecoder toComparable keyDecoder valueDecoder =
+    let
+        tupleDecoder : Decoder ( a, b )
+        tupleDecoder =
+            JD.map2 Tuple.pair
+                keyDecoder
+                valueDecoder
+    in
+    JD.list tupleDecoder
+        |> JD.map (Dict.fromList toComparable)

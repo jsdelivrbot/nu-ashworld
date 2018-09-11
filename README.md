@@ -14,14 +14,20 @@ There is currently no hot reloading and if you really wanted, you could see the 
 
 > Roughly in the order of "I'd like to do this the most", `DESC`.
 
-- [x] Only fight when you have some HP
-- [x] Time-based HP regeneration
-- [x] Investigate and fix the race condition for multiple HTTP responses of the server. (IDs?)
-- [x] Levels
-- [x] Level up messages
+- [ ] Actual authentication and security?
 - [ ] Randomized fight
 - [ ] Visibility of some "next tick in/at ..." information
 - [ ] Think about putting some "you've healed" msg to players' queues on each Heal tick
 - [ ] Design (that Adminator bootstrap template looks nice, but it's 1MB, blah. Do it myself? And in black/green FO2 theme? And with FO2 fonts? YESSS)
 - [ ] Investigate bidirectional websockets in 0.19 ([somebody did it like this](https://github.com/danneu/elm-mmo))
 
+## Done:
+
+> In chronological order.
+
+- [x] Only fight when you have some HP
+- [x] Time-based HP regeneration
+- [x] Investigate and fix the race condition for multiple HTTP responses of the server. (IDs?)
+- [x] Levels
+- [x] Level up messages
+- [x] Persistence

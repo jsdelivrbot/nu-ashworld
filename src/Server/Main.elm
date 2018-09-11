@@ -19,6 +19,13 @@ port log : String -> Cmd msg
 
 
 
+-- PERSISTENCE
+
+
+port persist : JE.Value -> Cmd msg
+
+
+
 -- HTTP
 
 
@@ -37,12 +44,19 @@ sendHttpResponse response value =
         |> httpResponse
 
 
+persistModel : Model -> Cmd msg
+persistModel model =
+    model
+        |> encodeModel
+        |> persist
+
+
 
 -- TYPES
 
 
 type alias Flags =
-    ()
+    JE.Value
 
 
 type alias Model =
@@ -66,15 +80,43 @@ main : Program Flags Model Msg
 main =
     Platform.worker
         { init = init
-        , update = update
+        , update = updateWithPersist
         , subscriptions = subscriptions
         }
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( { world = { players = Dict.empty Shared.Player.idToInt } }
-    , Cmd.none
+    case JD.decodeValue dataDecoder flags of
+        Ok model ->
+            ( model
+            , Cmd.none
+            )
+
+        Err err ->
+            let
+                model =
+                    { world = { players = Dict.empty Shared.Player.idToInt } }
+            in
+            ( model
+            , persistModel model
+            )
+
+
+updateWithPersist : Msg -> Model -> ( Model, Cmd Msg )
+updateWithPersist msg model =
+    let
+        ( newModel, cmd ) =
+            update msg model
+    in
+    ( newModel
+    , Cmd.batch
+        [ cmd
+        , if model == newModel then
+            Cmd.none
+          else
+            persistModel newModel
+        ]
     )
 
 
@@ -346,3 +388,16 @@ httpRequestDecoder =
     JD.map2 HttpRequestData
         (JD.field "url" JD.string)
         (JD.field "response" JD.value)
+
+
+encodeModel : Model -> JE.Value
+encodeModel model =
+    JE.object
+        [ ( "world", Shared.World.encodeServer model.world )
+        ]
+
+
+dataDecoder : Decoder Model
+dataDecoder =
+    JD.map Model
+        (JD.field "world" Shared.World.serverDecoder)
