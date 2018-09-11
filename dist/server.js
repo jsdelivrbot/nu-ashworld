@@ -31,4 +31,6 @@ console.log(`[NODE] Game server started on port ${gameServerPort}`);
 
 express()
   .use(express.static(__dirname))
+  .set('view engine', 'ejs')
+  .get('/', (req, res) => res.render('index', {host}))
   .listen(webServerPort, () => console.log(`[NODE] Web server started on port ${webServerPort}`));
