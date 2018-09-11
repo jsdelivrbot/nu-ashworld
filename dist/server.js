@@ -14,9 +14,7 @@ const dataKey = 'data';
     console.log(`Loaded persisted data: ${JSON.stringify(persistedData)}`);
 
     const app = Elm.Server.Main.init({
-        flags: {
-          data: persistedData,
-        },
+        flags: persistedData,
       });
 
       app.ports.log.subscribe(msg => {
