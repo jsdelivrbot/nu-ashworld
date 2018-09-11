@@ -1,14 +1,10 @@
 # NuAshworld
 
+* Client lives at https://janiczek.github.io/nu-ashworld/
+* Server lives at https://nu-ashworld.herokuapp.com
+
+
 A game attempting to be like the old [Ashworld](http://web.archive.org/web/20090312000154/http://ashworld.webd.pl:80/index.php?strona=7) game. Definitely not there yet :)
-
-```bash
-$ yarn
-$ yarn start:server # endpoint: localhost:3333
-$ yarn start:client # endpoint: localhost:4444, should open automatically
-```
-
-![Screencast of the current functionality](https://github.com/Janiczek/nu-ashworld/raw/master/video.gif)
 
 The server is currently not persisted to a database; it runs in-memory.
 
