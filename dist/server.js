@@ -14,7 +14,7 @@ app.ports.log.subscribe(msg => {
 app.ports.httpResponse.subscribe(([response, responseString]) => {
     response.writeHead(200, {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': 'https://janiczek.github.io',
     });
     response.end(responseString);
 });
