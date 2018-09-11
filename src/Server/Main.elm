@@ -99,7 +99,10 @@ init flags =
                     { world = { players = Dict.empty Shared.Player.idToInt } }
             in
             ( model
-            , persistModel model
+            , Cmd.batch
+                [ persistModel model
+                , log (JD.errorToString err)
+                ]
             )
 
 
