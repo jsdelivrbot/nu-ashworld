@@ -87,7 +87,7 @@ main =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    case JD.decodeValue dataDecoder flags of
+    case JD.decodeValue modelDecoder flags of
         Ok model ->
             ( model
             , Cmd.none
@@ -400,7 +400,7 @@ encodeModel model =
         ]
 
 
-dataDecoder : Decoder Model
-dataDecoder =
+modelDecoder : Decoder Model
+modelDecoder =
     JD.map Model
         (JD.field "world" Shared.World.serverDecoder)

@@ -121,8 +121,8 @@ anyDictDecoder toComparable keyDecoder valueDecoder =
         tupleDecoder : Decoder ( a, b )
         tupleDecoder =
             JD.map2 Tuple.pair
-                keyDecoder
-                valueDecoder
+                (JD.index 0 keyDecoder)
+                (JD.index 1 valueDecoder)
     in
     JD.list tupleDecoder
         |> JD.map (Dict.fromList toComparable)
