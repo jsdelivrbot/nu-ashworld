@@ -5,7 +5,6 @@ const pg = require('pg');
 const port = process.env.PORT || 5000;
 const host = process.env.HOST || 'http://localhost';
 const cors = process.env.CORS || '*';
-const jwtSecret = process.env.JWT_SECRET || 'jwt_secret';
 
 const dbConnectionString = process.env.DATABASE_URL || 'postgres://postgres@localhost:5432/nu-ashworld'
 
