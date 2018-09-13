@@ -1,14 +1,8 @@
 # NuAshworld
 
-* Client lives at https://janiczek.github.io/nu-ashworld/
-* Server lives at https://nu-ashworld.herokuapp.com
-
+* Play at https://janiczek.github.io/nu-ashworld/
 
 A game attempting to be like the old [Ashworld](http://web.archive.org/web/20090312000154/http://ashworld.webd.pl:80/index.php?strona=7) game. Definitely not there yet :)
-
-The server is currently not persisted to a database; it runs in-memory.
-
-There is currently no hot reloading and if you really wanted, you could see the server code from the client endpoint. Also there's no login/authentication right now. :poop:
 
 ## Next steps:
 
