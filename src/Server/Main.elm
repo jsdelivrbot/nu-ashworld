@@ -3,7 +3,6 @@ port module Server.Main exposing (main)
 import Dict exposing (Dict)
 import Extra.Json as EJ
 import Json.Decode as JD exposing (Decoder)
-import Json.Decode.Extra as JDE
 import Json.Encode as JE
 import Platform
 import Server.Route exposing (AttackData, Route(..))
