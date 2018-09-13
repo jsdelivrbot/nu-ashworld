@@ -14,6 +14,8 @@ There is currently no hot reloading and if you really wanted, you could see the 
 
 > Roughly in the order of "I'd like to do this the most", `DESC`.
 
+- [ ] Logout
+- [ ] See list of players even when not logged in
 - [ ] Randomized fight
 - [ ] Timestamps in the messages
 - [ ] Visibility of some "next tick in/at ..." information
