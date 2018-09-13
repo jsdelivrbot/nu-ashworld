@@ -9,25 +9,25 @@ module Server.World
         , setPlayerHp
         )
 
-import Dict.Any as Dict
+import Dict
 import Shared.Level
-import Shared.Player exposing (PlayerId, ServerPlayer)
+import Shared.Player exposing (ServerPlayer)
 import Shared.World exposing (ServerWorld)
 
 
 -- COMMANDS
 
 
-setPlayerHp : PlayerId -> Int -> ServerWorld -> ServerWorld
-setPlayerHp playerId newHp world =
+setPlayerHp : String -> Int -> ServerWorld -> ServerWorld
+setPlayerHp name newHp world =
     world
-        |> update playerId (Maybe.map (\player -> { player | hp = newHp }))
+        |> update name (Maybe.map (\player -> { player | hp = newHp }))
 
 
-addPlayerXp : PlayerId -> Int -> ServerWorld -> ServerWorld
-addPlayerXp playerId gainedXp world =
+addPlayerXp : String -> Int -> ServerWorld -> ServerWorld
+addPlayerXp name gainedXp world =
     world
-        |> update playerId
+        |> update name
             (Maybe.map
                 (\player ->
                     let
@@ -58,21 +58,21 @@ addPlayerXp playerId gainedXp world =
             )
 
 
-addPlayerMessage : PlayerId -> String -> ServerWorld -> ServerWorld
-addPlayerMessage playerId message world =
-    addPlayerMessages playerId [ message ] world
+addPlayerMessage : String -> String -> ServerWorld -> ServerWorld
+addPlayerMessage name message world =
+    addPlayerMessages name [ message ] world
 
 
-addPlayerMessages : PlayerId -> List String -> ServerWorld -> ServerWorld
-addPlayerMessages playerId messages world =
+addPlayerMessages : String -> List String -> ServerWorld -> ServerWorld
+addPlayerMessages name messages world =
     world
-        |> update playerId (Maybe.map (\player -> { player | messageQueue = player.messageQueue ++ messages }))
+        |> update name (Maybe.map (\player -> { player | messageQueue = player.messageQueue ++ messages }))
 
 
-emptyPlayerMessageQueue : PlayerId -> ServerWorld -> ServerWorld
-emptyPlayerMessageQueue playerId world =
+emptyPlayerMessageQueue : String -> ServerWorld -> ServerWorld
+emptyPlayerMessageQueue name world =
     world
-        |> update playerId (Maybe.map (\player -> { player | messageQueue = [] }))
+        |> update name (Maybe.map (\player -> { player | messageQueue = [] }))
 
 
 healEverybody : ServerWorld -> ServerWorld
@@ -91,19 +91,19 @@ type DeadStatus
     | Alive
 
 
-isDead : PlayerId -> ServerWorld -> Bool
-isDead playerId world =
-    deadStatus playerId world == Dead
+isDead : String -> ServerWorld -> Bool
+isDead name world =
+    deadStatus name world == Dead
 
 
 
 -- HELPERS
 
 
-deadStatus : PlayerId -> ServerWorld -> DeadStatus
-deadStatus playerId world =
+deadStatus : String -> ServerWorld -> DeadStatus
+deadStatus name world =
     world.players
-        |> Dict.get playerId
+        |> Dict.get name
         |> Maybe.map
             (\{ hp } ->
                 if hp == 0 then
@@ -128,11 +128,11 @@ levelUpMessage level =
         ++ "!"
 
 
-update : PlayerId -> (Maybe ServerPlayer -> Maybe ServerPlayer) -> ServerWorld -> ServerWorld
-update playerId fn world =
-    { world | players = world.players |> Dict.update playerId fn }
+update : String -> (Maybe ServerPlayer -> Maybe ServerPlayer) -> ServerWorld -> ServerWorld
+update name fn world =
+    { world | players = world.players |> Dict.update name fn }
 
 
-map : (PlayerId -> ServerPlayer -> ServerPlayer) -> ServerWorld -> ServerWorld
+map : (String -> ServerPlayer -> ServerPlayer) -> ServerWorld -> ServerWorld
 map fn world =
     { world | players = world.players |> Dict.map fn }

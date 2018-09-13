@@ -2,16 +2,20 @@ module Server.Route
     exposing
         ( AttackData
         , AttackResponse
+        , AuthError(..)
         , LoginResponse
         , RefreshResponse
         , Route(..)
+        , SignupError(..)
         , SignupResponse
         , attackDecoder
         , attackResponse
+        , authErrorDecoder
+        , authErrorToString
         , encodeAttack
         , encodeAttackError
+        , encodeAuthError
         , encodeLogin
-        , encodeLoginError
         , encodeNotFound
         , encodeRefresh
         , encodeRefreshError
@@ -23,6 +27,8 @@ module Server.Route
         , refreshDecoder
         , refreshResponse
         , signupDecoder
+        , signupErrorDecoder
+        , signupErrorToString
         , signupResponse
         , toString
         )
@@ -31,7 +37,8 @@ import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE
 import Shared.Fight exposing (Fight)
 import Shared.MessageQueue
-import Shared.Player exposing (PlayerId)
+import Shared.Password exposing (Authentication)
+import Shared.Player
 import Shared.World exposing (ClientWorld, ServerWorld)
 import Url
 import Url.Builder
@@ -40,15 +47,15 @@ import Url.Parser exposing ((</>), Parser)
 
 type Route
     = NotFound
-    | Signup
-    | Login PlayerId
-    | Refresh PlayerId
+    | Signup Authentication
+    | Login Authentication
+    | Refresh
     | Attack AttackData
 
 
 type alias AttackData =
-    { you : PlayerId
-    , them : PlayerId
+    { you : String
+    , them : String
     }
 
 
@@ -77,6 +84,16 @@ type alias AttackResponse =
     }
 
 
+type SignupError
+    = NameAlreadyExists
+    | CouldntFindNewlyCreatedUser
+
+
+type AuthError
+    = NameAndPasswordDoesntCheckOut
+    | AuthenticationHeadersMissing
+
+
 
 -- URLS
 
@@ -98,28 +115,32 @@ toString route =
         NotFound ->
             Url.Builder.absolute [ "404" ] []
 
-        Signup ->
-            Url.Builder.absolute [ "signup" ] []
-
-        Refresh id ->
+        Signup { name, hashedPassword } ->
             Url.Builder.absolute
-                [ "refresh"
-                , Shared.Player.idToString id
+                [ "signup"
+                , name
+                , hashedPassword
                 ]
                 []
 
-        Login id ->
+        Refresh ->
+            Url.Builder.absolute
+                [ "refresh" ]
+                []
+
+        Login { name, hashedPassword } ->
             Url.Builder.absolute
                 [ "login"
-                , Shared.Player.idToString id
+                , name
+                , hashedPassword
                 ]
                 []
 
         Attack { you, them } ->
             Url.Builder.absolute
                 [ "attack"
-                , Shared.Player.idToString you
-                , Shared.Player.idToString them
+                , you
+                , them
                 ]
                 []
 
@@ -131,37 +152,52 @@ toString route =
 parser : Parser (Route -> a) a
 parser =
     Url.Parser.oneOf
-        [ Url.Parser.map Signup signup
-        , Url.Parser.map Login login
+        [ Url.Parser.map
+            (\name hashedPassword ->
+                Signup
+                    { name = name
+                    , hashedPassword = hashedPassword
+                    }
+            )
+            signup
+        , Url.Parser.map
+            (\name hashedPassword ->
+                Login
+                    { name = name
+                    , hashedPassword = hashedPassword
+                    }
+            )
+            login
         , Url.Parser.map Refresh refresh
-        , Url.Parser.map (\you them -> Attack { you = you, them = them }) attack
+        , Url.Parser.map
+            (\you them ->
+                Attack
+                    { you = you
+                    , them = them
+                    }
+            )
+            attack
         ]
 
 
-signup : Parser a a
+signup : Parser (String -> String -> a) a
 signup =
-    Url.Parser.s "signup"
+    Url.Parser.s "signup" </> Url.Parser.string </> Url.Parser.string
 
 
-login : Parser (PlayerId -> a) a
+login : Parser (String -> String -> a) a
 login =
-    Url.Parser.s "login" </> playerId
+    Url.Parser.s "login" </> Url.Parser.string </> Url.Parser.string
 
 
-refresh : Parser (PlayerId -> a) a
+refresh : Parser a a
 refresh =
-    Url.Parser.s "refresh" </> playerId
+    Url.Parser.s "refresh"
 
 
-playerId : Parser (PlayerId -> a) a
-playerId =
-    Url.Parser.int
-        |> Url.Parser.map Shared.Player.id
-
-
-attack : Parser (PlayerId -> PlayerId -> a) a
+attack : Parser (String -> String -> a) a
 attack =
-    Url.Parser.s "attack" </> playerId </> playerId
+    Url.Parser.s "attack" </> Url.Parser.string </> Url.Parser.string
 
 
 
@@ -180,10 +216,11 @@ encodeNotFound url =
 -- SIGNUP
 
 
-signupResponse : PlayerId -> ServerWorld -> Maybe SignupResponse
-signupResponse playerId_ world =
-    Shared.World.serverToClient playerId_ world
-        |> Maybe.map (\clientWorld -> SignupResponse clientWorld [])
+signupResponse : String -> ServerWorld -> Result SignupError SignupResponse
+signupResponse name world =
+    Shared.World.serverToClient name world
+        |> Result.fromMaybe CouldntFindNewlyCreatedUser
+        |> Result.map (\clientWorld -> SignupResponse clientWorld [])
 
 
 encodeSignup : SignupResponse -> JE.Value
@@ -194,10 +231,94 @@ encodeSignup { world, messageQueue } =
         ]
 
 
-encodeSignupError : JE.Value
-encodeSignupError =
+signupErrorToString : SignupError -> String
+signupErrorToString error =
+    case error of
+        NameAlreadyExists ->
+            "Name already exists"
+
+        CouldntFindNewlyCreatedUser ->
+            "Couldn't find newly created user"
+
+
+signupErrorFromString : String -> Maybe SignupError
+signupErrorFromString string =
+    case string of
+        "Name already exists" ->
+            Just NameAlreadyExists
+
+        "Couldn't find newly created user" ->
+            Just CouldntFindNewlyCreatedUser
+
+        _ ->
+            Nothing
+
+
+encodeSignupError : SignupError -> JE.Value
+encodeSignupError error =
     JE.object
-        [ ( "error", JE.string "Couldn't signup" ) ]
+        [ ( "error", JE.string (signupErrorToString error) ) ]
+
+
+signupErrorDecoder : Decoder SignupError
+signupErrorDecoder =
+    JD.field "error"
+        (JD.string
+            |> JD.andThen
+                (\string ->
+                    case signupErrorFromString string of
+                        Just error ->
+                            JD.succeed error
+
+                        Nothing ->
+                            JD.fail "Unknown SignupError"
+                )
+        )
+
+
+authErrorToString : AuthError -> String
+authErrorToString error =
+    case error of
+        NameAndPasswordDoesntCheckOut ->
+            "Name and password doesn't check out"
+
+        AuthenticationHeadersMissing ->
+            "Authentication headers missing"
+
+
+authErrorFromString : String -> Maybe AuthError
+authErrorFromString string =
+    case string of
+        "Name and password doesn't check out" ->
+            Just NameAndPasswordDoesntCheckOut
+
+        "Authentication headers missing" ->
+            Just AuthenticationHeadersMissing
+
+        _ ->
+            Nothing
+
+
+encodeAuthError : AuthError -> JE.Value
+encodeAuthError error =
+    JE.object
+        [ ( "error", JE.string (authErrorToString error) ) ]
+
+
+authErrorDecoder : Decoder AuthError
+authErrorDecoder =
+    JD.field "error"
+        (JD.string
+            |> JD.andThen
+                (\string ->
+                    case authErrorFromString string of
+                        Just error ->
+                            JD.succeed error
+
+                        Nothing ->
+                            JD.fail "Unknown AuthError"
+                )
+        )
 
 
 signupDecoder : Decoder SignupResponse
@@ -211,9 +332,9 @@ signupDecoder =
 -- LOGIN
 
 
-loginResponse : List String -> PlayerId -> ServerWorld -> Maybe LoginResponse
-loginResponse messageQueue playerId_ world =
-    Shared.World.serverToClient playerId_ world
+loginResponse : List String -> String -> ServerWorld -> Maybe LoginResponse
+loginResponse messageQueue name world =
+    Shared.World.serverToClient name world
         |> Maybe.map (\clientWorld -> LoginResponse clientWorld messageQueue)
 
 
@@ -223,12 +344,6 @@ encodeLogin { world, messageQueue } =
         [ ( "world", Shared.World.encode world )
         , ( "messageQueue", Shared.MessageQueue.encode messageQueue )
         ]
-
-
-encodeLoginError : JE.Value
-encodeLoginError =
-    JE.object
-        [ ( "error", JE.string "Couldn't find user" ) ]
 
 
 loginDecoder : Decoder LoginResponse
@@ -242,9 +357,9 @@ loginDecoder =
 -- REFRESH
 
 
-refreshResponse : List String -> PlayerId -> ServerWorld -> Maybe RefreshResponse
-refreshResponse messageQueue playerId_ world =
-    Shared.World.serverToClient playerId_ world
+refreshResponse : List String -> String -> ServerWorld -> Maybe RefreshResponse
+refreshResponse messageQueue name world =
+    Shared.World.serverToClient name world
         |> Maybe.map (\clientWorld -> LoginResponse clientWorld messageQueue)
 
 
@@ -273,9 +388,9 @@ refreshDecoder =
 -- ATTACK
 
 
-attackResponse : List String -> PlayerId -> ServerWorld -> Maybe Fight -> Maybe AttackResponse
-attackResponse messageQueue playerId_ world maybeFight =
-    Shared.World.serverToClient playerId_ world
+attackResponse : List String -> String -> ServerWorld -> Maybe Fight -> Maybe AttackResponse
+attackResponse messageQueue name world maybeFight =
+    Shared.World.serverToClient name world
         |> Maybe.map (\clientWorld -> AttackResponse clientWorld messageQueue maybeFight)
 
 

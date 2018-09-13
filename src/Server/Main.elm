@@ -1,13 +1,16 @@
 port module Server.Main exposing (main)
 
-import Dict.Any as Dict exposing (AnyDict)
+import Dict exposing (Dict)
+import Extra.Json as EJ
 import Json.Decode as JD exposing (Decoder)
+import Json.Decode.Extra as JDE
 import Json.Encode as JE
 import Platform
 import Server.Route exposing (AttackData, Route(..))
 import Server.World
 import Shared.Fight exposing (Fight(..))
-import Shared.Player exposing (PlayerId, ServerPlayer)
+import Shared.Password exposing (Authentication)
+import Shared.Player exposing (ServerPlayer)
 import Shared.World exposing (ServerWorld)
 import Time exposing (Posix)
 
@@ -73,6 +76,7 @@ type Msg
 type alias HttpRequestData =
     { url : String
     , response : JE.Value
+    , headers : Dict String String
     }
 
 
@@ -96,7 +100,8 @@ init flags =
         Err err ->
             let
                 model =
-                    { world = { players = Dict.empty Shared.Player.idToInt } }
+                    { world = { players = Dict.empty }
+                    }
             in
             ( model
             , Cmd.batch
@@ -126,26 +131,26 @@ updateWithPersist msg model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        HttpRequest { url, response } ->
+        HttpRequest { url, response, headers } ->
             case Server.Route.fromString url of
                 NotFound ->
                     handleNotFound url response model
 
-                Signup ->
-                    handleSignup response model
+                Signup auth ->
+                    handleSignup auth response model
 
-                Login playerId ->
-                    handleLogin playerId response model
+                Login auth ->
+                    handleLogin auth response model
 
-                Refresh playerId ->
-                    handleRefresh playerId response model
+                Refresh ->
+                    handleRefresh (authHeaders headers) response model
 
                 Attack attackData ->
-                    handleAttack attackData response model
+                    handleAttack (authHeaders headers) attackData response model
 
         HttpRequestError error ->
             ( model
-            , log "Server error"
+            , log (JD.errorToString error)
             )
 
         HealTick timeOfTick ->
@@ -165,19 +170,26 @@ update msg model =
             )
 
 
-getMessageQueue : PlayerId -> Model -> ( List String, Model )
-getMessageQueue id model =
+authHeaders : Dict String String -> Maybe Authentication
+authHeaders headers =
+    Maybe.map2 Authentication
+        (Dict.get "x-username" headers)
+        (Dict.get "x-hashed-password" headers)
+
+
+getMessageQueue : String -> Model -> ( List String, Model )
+getMessageQueue name model =
     let
         queue : List String
         queue =
-            Dict.get id model.world.players
+            Dict.get name model.world.players
                 |> Maybe.map .messageQueue
                 |> Maybe.withDefault []
 
         newWorld : ServerWorld
         newWorld =
             model.world
-                |> Server.World.emptyPlayerMessageQueue id
+                |> Server.World.emptyPlayerMessageQueue name
 
         newModel : Model
         newModel =
@@ -197,70 +209,112 @@ handleNotFound url response model =
     )
 
 
-handleSignup : JE.Value -> Model -> ( Model, Cmd Msg )
-handleSignup response model =
-    let
-        newId : PlayerId
-        newId =
-            Dict.size model.world.players
-                |> Shared.Player.id
-
-        newPlayer : ServerPlayer
-        newPlayer =
-            Shared.Player.init newId
-
-        newModel : Model
-        newModel =
-            model
-                |> addPlayer newId newPlayer
-    in
-    ( newModel
-    , sendHttpResponse response
-        (Server.Route.signupResponse newId newModel.world
-            |> Maybe.map Server.Route.encodeSignup
-            |> Maybe.withDefault Server.Route.encodeSignupError
+handleSignup : Authentication -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleSignup { name, hashedPassword } response model =
+    if nameExists name model.world then
+        ( model
+        , sendHttpResponse response (Server.Route.encodeSignupError Server.Route.NameAlreadyExists)
         )
-    )
-
-
-handleLogin : PlayerId -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleLogin playerId response model =
-    let
-        ( messageQueue, newModel ) =
-            getMessageQueue playerId model
-    in
-    ( newModel
-    , sendHttpResponse response
-        (Server.Route.loginResponse messageQueue playerId newModel.world
-            |> Maybe.map Server.Route.encodeLogin
-            |> Maybe.withDefault Server.Route.encodeLoginError
-        )
-    )
-
-
-handleRefresh : PlayerId -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleRefresh playerId response model =
-    let
-        ( messageQueue, newModel ) =
-            getMessageQueue playerId model
-    in
-    ( newModel
-    , sendHttpResponse response
-        (Server.Route.refreshResponse messageQueue playerId newModel.world
-            |> Maybe.map Server.Route.encodeRefresh
-            |> Maybe.withDefault Server.Route.encodeRefreshError
-        )
-    )
-
-
-handleAttack : AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleAttack ({ you, them } as attackData) response model =
-    if Server.World.isDead you model.world then
-        handleAttackYouDead attackData response model
-    else if Server.World.isDead them model.world then
-        handleAttackThemDead attackData response model
     else
-        handleAttackNobodyDead attackData response model
+        let
+            newPlayer : ServerPlayer
+            newPlayer =
+                Shared.Player.init name hashedPassword
+
+            newModel : Model
+            newModel =
+                model
+                    |> addPlayer newPlayer
+        in
+        ( newModel
+        , sendHttpResponse response
+            (case Server.Route.signupResponse name newModel.world of
+                Ok signupResponse ->
+                    Server.Route.encodeSignup signupResponse
+
+                Err signupError ->
+                    Server.Route.encodeSignupError signupError
+            )
+        )
+
+
+nameExists : String -> ServerWorld -> Bool
+nameExists name world =
+    world.players
+        |> Dict.filter (\_ player -> player.name == name)
+        |> Dict.isEmpty
+        |> not
+
+
+handleLogin : Authentication -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleLogin auth response model =
+    if Shared.Password.checksOut auth model.world then
+        let
+            ( messageQueue, newModel ) =
+                getMessageQueue auth.name model
+        in
+        ( newModel
+        , sendHttpResponse response
+            (Server.Route.loginResponse messageQueue auth.name newModel.world
+                |> Maybe.map Server.Route.encodeLogin
+                |> Maybe.withDefault (Server.Route.encodeAuthError Server.Route.NameAndPasswordDoesntCheckOut)
+            )
+        )
+    else
+        ( model
+        , sendHttpResponse response (Server.Route.encodeAuthError Server.Route.NameAndPasswordDoesntCheckOut)
+        )
+
+
+handleRefresh : Maybe Authentication -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleRefresh maybeAuth response model =
+    maybeAuth
+        |> Maybe.map
+            (\auth ->
+                if Shared.Password.checksOut auth model.world then
+                    let
+                        ( messageQueue, newModel ) =
+                            getMessageQueue auth.name model
+                    in
+                    ( newModel
+                    , sendHttpResponse response
+                        (Server.Route.refreshResponse messageQueue auth.name newModel.world
+                            |> Maybe.map Server.Route.encodeRefresh
+                            |> Maybe.withDefault Server.Route.encodeRefreshError
+                        )
+                    )
+                else
+                    ( model
+                    , sendHttpResponse response (Server.Route.encodeAuthError Server.Route.NameAndPasswordDoesntCheckOut)
+                    )
+            )
+        |> Maybe.withDefault
+            ( model
+            , sendHttpResponse response (Server.Route.encodeAuthError Server.Route.AuthenticationHeadersMissing)
+            )
+
+
+handleAttack : Maybe Authentication -> AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleAttack maybeAuth ({ you, them } as attackData) response model =
+    maybeAuth
+        |> Maybe.map
+            (\auth ->
+                if Shared.Password.checksOut auth model.world then
+                    if Server.World.isDead you model.world then
+                        handleAttackYouDead attackData response model
+                    else if Server.World.isDead them model.world then
+                        handleAttackThemDead attackData response model
+                    else
+                        handleAttackNobodyDead attackData response model
+                else
+                    ( model
+                    , sendHttpResponse response (Server.Route.encodeAuthError Server.Route.NameAndPasswordDoesntCheckOut)
+                    )
+            )
+        |> Maybe.withDefault
+            ( model
+            , sendHttpResponse response (Server.Route.encodeAuthError Server.Route.AuthenticationHeadersMissing)
+            )
 
 
 handleAttackYouDead : AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )
@@ -320,7 +374,7 @@ handleAttackNobodyDead { you, them } response model =
                             , "You won!"
                             ]
                         |> Server.World.addPlayerMessage them
-                            ("Player #" ++ Shared.Player.idToString you ++ " fought you and killed you!")
+                            ("Player " ++ you ++ " fought you and killed you!")
                         |> Server.World.setPlayerHp them 0
                         |> Server.World.addPlayerXp you 10
 
@@ -331,7 +385,7 @@ handleAttackNobodyDead { you, them } response model =
                             , "You die!"
                             ]
                         |> Server.World.addPlayerMessage them
-                            ("Player #" ++ Shared.Player.idToString you ++ " fought you but you managed to kill them!")
+                            ("Player " ++ you ++ " fought you but you managed to kill them!")
                         |> Server.World.setPlayerHp you 0
                         |> Server.World.addPlayerXp them 5
 
@@ -357,11 +411,11 @@ setWorld world model =
     { model | world = world }
 
 
-addPlayer : PlayerId -> ServerPlayer -> Model -> Model
-addPlayer id player ({ world } as model) =
+addPlayer : ServerPlayer -> Model -> Model
+addPlayer player ({ world } as model) =
     { model
         | world =
-            { world | players = world.players |> Dict.insert id player }
+            { world | players = world.players |> Dict.insert player.name player }
     }
 
 
@@ -388,9 +442,10 @@ subscriptions model =
 
 httpRequestDecoder : Decoder HttpRequestData
 httpRequestDecoder =
-    JD.map2 HttpRequestData
+    JD.map3 HttpRequestData
         (JD.field "url" JD.string)
         (JD.field "response" JD.value)
+        (JD.field "headers" (EJ.dictFromObject JD.string))
 
 
 encodeModel : Model -> JE.Value

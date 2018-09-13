@@ -14,8 +14,8 @@ There is currently no hot reloading and if you really wanted, you could see the 
 
 > Roughly in the order of "I'd like to do this the most", `DESC`.
 
-- [ ] Actual authentication and security?
 - [ ] Randomized fight
+- [ ] Timestamps in the messages
 - [ ] Visibility of some "next tick in/at ..." information
 - [ ] Think about putting some "you've healed" msg to players' queues on each Heal tick
 - [ ] Design (that Adminator bootstrap template looks nice, but it's 1MB, blah. Do it myself? And in black/green FO2 theme? And with FO2 fonts? YESSS)
@@ -31,3 +31,4 @@ There is currently no hot reloading and if you really wanted, you could see the 
 - [x] Levels
 - [x] Level up messages
 - [x] Persistence
+- [x] Actual authentication and security
