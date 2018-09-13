@@ -1,8 +1,11 @@
 # NuAshworld
 
 * Play at https://janiczek.github.io/nu-ashworld/
+* Subreddit at https://www.reddit.com/r/NuAshworld/
 
 A game attempting to be like the old [Ashworld](http://web.archive.org/web/20090312000154/http://ashworld.webd.pl:80/index.php?strona=7) game. Definitely not there yet :)
+
+It is still very much in flux and less-than-alpha quality. Expect whatever progress you do in the game to get lost regularly. There is some basic persistence baked in, but until the game goes to some kind of alpha or beta, I don't worry too much about it.
 
 ## Next steps:
 
