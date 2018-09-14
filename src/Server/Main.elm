@@ -7,8 +7,7 @@ import Json.Encode as JE
 import Platform
 import Server.Route as Route
     exposing
-        ( AttackData
-        , AuthError(..)
+        ( AuthError(..)
         , Route(..)
         , SignupError(..)
         )
@@ -141,11 +140,11 @@ update msg model =
                 NotFound ->
                     handleNotFound url response model
 
-                Signup auth ->
-                    handleSignup auth response model
+                Signup ->
+                    handleSignup (authHeaders headers) response model
 
-                Login auth ->
-                    handleLogin auth response model
+                Login ->
+                    handleLogin (authHeaders headers) response model
 
                 Logout ->
                     handleLogout response model
@@ -220,34 +219,43 @@ handleNotFound url response model =
     )
 
 
-handleSignup : Auth -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleSignup { name, hashedPassword } response model =
-    if nameExists name model.world then
-        ( model
-        , sendHttpResponse response
-            (Route.handlers.signup.encodeError NameAlreadyExists)
-        )
-    else
-        let
-            newPlayer : ServerPlayer
-            newPlayer =
-                Shared.Player.init name hashedPassword
+handleSignup : Maybe Auth -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleSignup maybeAuth response model =
+    maybeAuth
+        |> Maybe.map
+            (\{ name, hashedPassword } ->
+                if nameExists name model.world then
+                    ( model
+                    , sendHttpResponse response
+                        (Route.handlers.signup.encodeError NameAlreadyExists)
+                    )
+                else
+                    let
+                        newPlayer : ServerPlayer
+                        newPlayer =
+                            Shared.Player.init name hashedPassword
 
-            newModel : Model
-            newModel =
-                model
-                    |> addPlayer newPlayer
-        in
-        ( newModel
-        , sendHttpResponse response
-            (case Route.handlers.signup.response name newModel.world of
-                Ok signupResponse ->
-                    Route.handlers.signup.encode signupResponse
+                        newModel : Model
+                        newModel =
+                            model
+                                |> addPlayer newPlayer
+                    in
+                    ( newModel
+                    , sendHttpResponse response
+                        (case Route.handlers.signup.response name newModel.world of
+                            Ok signupResponse ->
+                                Route.handlers.signup.encode signupResponse
 
-                Err signupError ->
-                    Route.handlers.signup.encodeError signupError
+                            Err signupError ->
+                                Route.handlers.signup.encodeError signupError
+                        )
+                    )
             )
-        )
+        |> Maybe.withDefault
+            ( model
+            , sendHttpResponse response
+                (Route.handlers.signup.encodeError (AuthError AuthenticationHeadersMissing))
+            )
 
 
 nameExists : String -> ServerWorld -> Bool
@@ -258,24 +266,32 @@ nameExists name world =
         |> not
 
 
-handleLogin : Auth -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleLogin auth response model =
-    if Shared.Password.checksOut auth model.world then
-        let
-            ( messageQueue, newModel ) =
-                getMessageQueue auth.name model
-        in
-        ( newModel
-        , sendHttpResponse response
-            (Route.handlers.login.response messageQueue auth.name newModel.world
-                |> Maybe.map Route.handlers.login.encode
-                |> Maybe.withDefault (Route.handlers.login.encodeError Route.NameAndPasswordDoesntCheckOut)
+handleLogin : Maybe Auth -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleLogin maybeAuth response model =
+    maybeAuth
+        |> Maybe.map
+            (\auth ->
+                if Shared.Password.checksOut auth model.world then
+                    let
+                        ( messageQueue, newModel ) =
+                            getMessageQueue auth.name model
+                    in
+                    ( newModel
+                    , sendHttpResponse response
+                        (Route.handlers.login.response messageQueue auth.name newModel.world
+                            |> Maybe.map Route.handlers.login.encode
+                            |> Maybe.withDefault (Route.handlers.login.encodeError NameAndPasswordDoesntCheckOut)
+                        )
+                    )
+                else
+                    ( model
+                    , sendHttpResponse response (Route.handlers.login.encodeError NameAndPasswordDoesntCheckOut)
+                    )
             )
-        )
-    else
-        ( model
-        , sendHttpResponse response (Route.handlers.login.encodeError Route.NameAndPasswordDoesntCheckOut)
-        )
+        |> Maybe.withDefault
+            ( model
+            , sendHttpResponse response (Route.handlers.login.encodeError AuthenticationHeadersMissing)
+            )
 
 
 handleLogout : JE.Value -> Model -> ( Model, Cmd Msg )
@@ -326,18 +342,23 @@ handleRefreshAnonymous response model =
     )
 
 
-handleAttack : Maybe Auth -> AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleAttack maybeAuth ({ you, them } as attackData) response model =
+handleAttack : Maybe Auth -> String -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleAttack maybeAuth them response ({ world } as model) =
     maybeAuth
         |> Maybe.map
             (\auth ->
-                if Shared.Password.checksOut auth model.world then
-                    if Server.World.isDead you model.world then
-                        handleAttackYouDead attackData response model
-                    else if Server.World.isDead them model.world then
-                        handleAttackThemDead attackData response model
+                let
+                    you : String
+                    you =
+                        auth.name
+                in
+                if Shared.Password.checksOut auth world then
+                    if Server.World.isDead you world then
+                        handleAttackYouDead you response model
+                    else if Server.World.isDead them world then
+                        handleAttackThemDead you them response model
                     else
-                        handleAttackNobodyDead attackData response model
+                        handleAttackNobodyDead you them response model
                 else
                     ( model
                     , sendHttpResponse response (Route.handlers.attack.encodeError NameAndPasswordDoesntCheckOut)
@@ -349,8 +370,8 @@ handleAttack maybeAuth ({ you, them } as attackData) response model =
             )
 
 
-handleAttackYouDead : AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleAttackYouDead { you } response model =
+handleAttackYouDead : String -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleAttackYouDead you response model =
     let
         ( messageQueue, modelWithoutMessages ) =
             getMessageQueue you model
@@ -368,8 +389,8 @@ handleAttackYouDead { you } response model =
     )
 
 
-handleAttackThemDead : AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleAttackThemDead { you, them } response model =
+handleAttackThemDead : String -> String -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleAttackThemDead you them response model =
     let
         ( messageQueue, modelWithoutMessages ) =
             getMessageQueue you model
@@ -387,8 +408,8 @@ handleAttackThemDead { you, them } response model =
     )
 
 
-handleAttackNobodyDead : AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleAttackNobodyDead { you, them } response model =
+handleAttackNobodyDead : String -> String -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleAttackNobodyDead you them response model =
     let
         fight : Fight
         fight =

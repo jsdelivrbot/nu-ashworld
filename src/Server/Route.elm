@@ -1,7 +1,6 @@
 module Server.Route
     exposing
-        ( AttackData
-        , AttackResponse
+        ( AttackResponse
         , AuthError(..)
         , LoginResponse
         , LogoutResponse
@@ -34,11 +33,11 @@ import Url.Parser exposing ((</>), Parser)
 
 type Route
     = NotFound
-    | Signup Auth
-    | Login Auth
+    | Signup
+    | Login
     | Refresh
     | RefreshAnonymous
-    | Attack AttackData
+    | Attack String
     | Logout
 
 
@@ -123,12 +122,6 @@ logout =
     }
 
 
-type alias AttackData =
-    { you : String
-    , them : String
-    }
-
-
 type alias LoginResponse =
     { world : ClientWorld
     , messageQueue : List String
@@ -161,6 +154,7 @@ type alias AttackResponse =
 type SignupError
     = NameAlreadyExists
     | CouldntFindNewlyCreatedUser
+    | AuthError AuthError
 
 
 type AuthError
@@ -193,8 +187,8 @@ toString route =
         NotFound ->
             handlers.notFound.toUrl
 
-        Signup auth ->
-            handlers.signup.toUrl auth
+        Signup ->
+            handlers.signup.toUrl
 
         Refresh ->
             handlers.refresh.toUrl
@@ -202,11 +196,11 @@ toString route =
         RefreshAnonymous ->
             handlers.refreshAnonymous.toUrl
 
-        Login auth ->
-            handlers.login.toUrl auth
+        Login ->
+            handlers.login.toUrl
 
-        Attack attackData ->
-            handlers.attack.toUrl attackData
+        Attack theirName ->
+            handlers.attack.toUrl theirName
 
         Logout ->
             handlers.logout.toUrl
@@ -232,7 +226,7 @@ parserFailsafe route =
         NotFound ->
             "yes I have added the new parser to `parser` above"
 
-        Signup auth ->
+        Signup ->
             "yes I have added the new parser to `parser` above"
 
         Refresh ->
@@ -241,10 +235,10 @@ parserFailsafe route =
         RefreshAnonymous ->
             "yes I have added the new parser to `parser` above"
 
-        Login auth ->
+        Login ->
             "yes I have added the new parser to `parser` above"
 
-        Attack attackData ->
+        Attack _ ->
             "yes I have added the new parser to `parser` above"
 
         Logout ->
@@ -326,29 +320,15 @@ notFoundToUrl =
 -- SIGNUP
 
 
-signupToUrl : Auth -> String
-signupToUrl { name, hashedPassword } =
-    Url.Builder.absolute
-        [ "signup"
-        , name
-        , hashedPassword
-        ]
-        []
+signupToUrl : String
+signupToUrl =
+    Url.Builder.absolute [ "signup" ] []
 
 
 signupUrlParser : Parser (Route -> a) a
 signupUrlParser =
-    Url.Parser.map
-        (\name hashedPassword ->
-            Signup
-                { name = name
-                , hashedPassword = hashedPassword
-                }
-        )
-        (Url.Parser.s "signup"
-            </> Url.Parser.string
-            </> Url.Parser.string
-        )
+    Url.Parser.map Signup
+        (Url.Parser.s "signup")
 
 
 encodeSignup : SignupResponse -> JE.Value
@@ -373,6 +353,9 @@ signupErrorToString error =
 
         CouldntFindNewlyCreatedUser ->
             "Couldn't find newly created user"
+
+        AuthError authError ->
+            authErrorToString authError
 
 
 signupDecoder : Decoder SignupResponse
@@ -399,7 +382,8 @@ signupErrorFromString string =
             Just CouldntFindNewlyCreatedUser
 
         _ ->
-            Nothing
+            authErrorFromString string
+                |> Maybe.map AuthError
 
 
 signupErrorDecoder : Decoder SignupError
@@ -422,29 +406,15 @@ signupErrorDecoder =
 -- LOGIN
 
 
-loginToUrl : Auth -> String
-loginToUrl { name, hashedPassword } =
-    Url.Builder.absolute
-        [ "login"
-        , name
-        , hashedPassword
-        ]
-        []
+loginToUrl : String
+loginToUrl =
+    Url.Builder.absolute [ "login" ] []
 
 
 loginUrlParser : Parser (Route -> a) a
 loginUrlParser =
-    Url.Parser.map
-        (\name hashedPassword ->
-            Login
-                { name = name
-                , hashedPassword = hashedPassword
-                }
-        )
-        (Url.Parser.s "login"
-            </> Url.Parser.string
-            </> Url.Parser.string
-        )
+    Url.Parser.map Login
+        (Url.Parser.s "login")
 
 
 encodeLogin : LoginResponse -> JE.Value
@@ -547,27 +517,19 @@ refreshAnonymousResponse world =
 -- ATTACK
 
 
-attackToUrl : AttackData -> String
-attackToUrl { you, them } =
+attackToUrl : String -> String
+attackToUrl theirName =
     Url.Builder.absolute
         [ "attack"
-        , you
-        , them
+        , theirName
         ]
         []
 
 
 attackUrlParser : Parser (Route -> a) a
 attackUrlParser =
-    Url.Parser.map
-        (\you them ->
-            Attack
-                { you = you
-                , them = them
-                }
-        )
+    Url.Parser.map Attack
         (Url.Parser.s "attack"
-            </> Url.Parser.string
             </> Url.Parser.string
         )
 

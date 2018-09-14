@@ -140,16 +140,16 @@ update msg ({ serverEndpoint } as model) =
             , Cmd.none
             )
 
-        Request ((Signup auth) as route) ->
+        Request (Signup as route) ->
             ( model
                 |> setWorldAsLoading
-            , sendRequest serverEndpoint route (Just auth)
+            , sendRequest serverEndpoint route (getUncheckedAuth model)
             )
 
-        Request ((Login auth) as route) ->
+        Request (Login as route) ->
             ( model
                 |> setWorldAsLoading
-            , sendRequest serverEndpoint route (Just auth)
+            , sendRequest serverEndpoint route (getUncheckedAuth model)
             )
 
         Request (Logout as route) ->
@@ -406,6 +406,31 @@ logoutUser model =
     }
 
 
+getUncheckedAuth : Model -> Maybe Auth
+getUncheckedAuth model =
+    case model.user of
+        Anonymous _ form ->
+            Just (toAuth form)
+
+        SigningUp _ form ->
+            Just (toAuth form)
+
+        SigningUpError _ _ form ->
+            Just (toAuth form)
+
+        UnknownError _ _ form ->
+            Just (toAuth form)
+
+        LoggingIn _ form ->
+            Just (toAuth form)
+
+        LoggingInError _ _ form ->
+            Just (toAuth form)
+
+        LoggedIn _ ->
+            Nothing
+
+
 getAuth : Model -> Maybe Auth
 getAuth model =
     case model.user of
@@ -603,21 +628,21 @@ sendRequest serverEndpoint route maybeAuth =
         NotFound ->
             send (\_ -> NoOp) (JD.fail "Server route not found") Nothing
 
-        Signup _ ->
+        Signup ->
             send GetSignupResponse
                 (successOrErrorDecoder
                     Route.handlers.signup.decoder
                     Route.handlers.signup.errorDecoder
                 )
-                Nothing
+                maybeAuth
 
-        Login auth ->
+        Login ->
             send GetLoginResponse
                 (successOrErrorDecoder
                     Route.handlers.login.decoder
                     Route.handlers.login.errorDecoder
                 )
-                Nothing
+                maybeAuth
 
         Refresh ->
             send GetRefreshResponse
@@ -700,7 +725,7 @@ viewAnonymous world credentialsForm maybeMessage =
 
 
 viewCredentialsForm : CredentialsForm -> Maybe String -> Html Msg
-viewCredentialsForm { name, password } maybeMessage =
+viewCredentialsForm ({ name, password } as form) maybeMessage =
     let
         unmetRules : List String
         unmetRules =
@@ -719,21 +744,15 @@ viewCredentialsForm { name, password } maybeMessage =
         hasUnmetRules =
             not (List.isEmpty unmetRules)
 
-        button : (Auth -> Route) -> String -> Html Msg
-        button tagger label =
+        button : Route -> String -> Html Msg
+        button route label =
             H.button
                 (if hasUnmetRules then
                     [ HA.disabled True
-                    , HA.title (unmetRules |> String.join "; ")
+                    , HA.title (String.join "; " unmetRules)
                     ]
                  else
-                    [ onClickRequest
-                        (tagger
-                            { name = name
-                            , hashedPassword = Shared.Password.hash password
-                            }
-                        )
-                    ]
+                    [ onClickRequest route ]
                 )
                 [ H.text label ]
     in
@@ -757,6 +776,13 @@ viewCredentialsForm { name, password } maybeMessage =
             |> Maybe.map (\message -> H.div [] [ H.text message ])
             |> Maybe.withDefault (H.text "")
         ]
+
+
+toAuth : CredentialsForm -> Auth
+toAuth { name, password } =
+    { name = name
+    , hashedPassword = Shared.Password.hash password
+    }
 
 
 viewLoggedInUser : LoggedInUser -> List (Html Msg)
@@ -912,12 +938,7 @@ viewOtherPlayer player otherPlayer =
         , H.td []
             [ H.button
                 [ if player.hp > 0 && otherPlayer.hp > 0 then
-                    onClickRequest
-                        (Attack
-                            { you = player.name
-                            , them = otherPlayer.name
-                            }
-                        )
+                    onClickRequest (Attack otherPlayer.name)
                   else
                     HA.disabled True
                 ]
