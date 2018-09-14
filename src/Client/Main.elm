@@ -106,7 +106,7 @@ init { serverEndpoint } url key =
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update msg ({ serverEndpoint } as model) =
     case msg of
         NoOp ->
             ( model, Cmd.none )
@@ -143,38 +143,38 @@ update msg model =
         Request ((Signup auth) as route) ->
             ( model
                 |> setWorldAsLoading
-            , sendRequest model.serverEndpoint route (Just auth)
+            , sendRequest serverEndpoint route (Just auth)
             )
 
         Request ((Login auth) as route) ->
             ( model
                 |> setWorldAsLoading
-            , sendRequest model.serverEndpoint route (Just auth)
+            , sendRequest serverEndpoint route (Just auth)
             )
 
         Request (Logout as route) ->
             ( -- TODO maybe logout on the client side optimistically?
               model
                 |> mapAnonymousWorld (\_ -> Loading)
-            , sendRequest model.serverEndpoint route Nothing
+            , sendRequest serverEndpoint route Nothing
             )
 
         Request ((Attack _) as route) ->
             ( model
                 |> setWorldAsLoading
-            , sendRequest model.serverEndpoint route (getAuth model)
+            , sendRequest serverEndpoint route (getAuth model)
             )
 
         Request (Refresh as route) ->
             ( model
                 |> setWorldAsLoading
-            , sendRequest model.serverEndpoint route (getAuth model)
+            , sendRequest serverEndpoint route (getAuth model)
             )
 
         Request (RefreshAnonymous as route) ->
             ( model
                 |> mapAnonymousWorld (\_ -> Loading)
-            , sendRequest model.serverEndpoint route Nothing
+            , sendRequest serverEndpoint route Nothing
             )
 
         GetSignupResponse response ->

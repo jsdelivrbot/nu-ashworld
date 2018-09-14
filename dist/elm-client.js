@@ -2401,7 +2401,7 @@ function _Http_toResponse(xhr)
 {
 	return {
 		bu: xhr.responseURL,
-		bo: { a3: xhr.status, s: xhr.statusText },
+		bo: { a3: xhr.status, r: xhr.statusText },
 		ba: _Http_parseHeaders(xhr.getAllResponseHeaders()),
 		an: xhr.response
 	};
@@ -2862,7 +2862,7 @@ var _VirtualDom_mapEventTuple = F2(function(func, tuple)
 var _VirtualDom_mapEventRecord = F2(function(func, record)
 {
 	return {
-		s: func(record.s),
+		r: func(record.r),
 		ak: record.ak,
 		ai: record.ai
 	}
@@ -3132,7 +3132,7 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 		// 3 = Custom
 
 		var value = result.a;
-		var message = !tag ? value : tag < 3 ? value.a : value.s;
+		var message = !tag ? value : tag < 3 ? value.a : value.r;
 		var stopPropagation = tag == 1 ? value.b : tag == 3 && value.ak;
 		var currentEventNode = (
 			stopPropagation && event.stopPropagation(),
@@ -4386,7 +4386,7 @@ function _Browser_getViewport()
 			W: _Browser_window.pageXOffset,
 			X: _Browser_window.pageYOffset,
 			H: _Browser_doc.documentElement.clientWidth,
-			C: _Browser_doc.documentElement.clientHeight
+			B: _Browser_doc.documentElement.clientHeight
 		}
 	};
 }
@@ -4397,7 +4397,7 @@ function _Browser_getScene()
 	var elem = _Browser_doc.documentElement;
 	return {
 		H: Math.max(body.scrollWidth, body.offsetWidth, elem.scrollWidth, elem.offsetWidth, elem.clientWidth),
-		C: Math.max(body.scrollHeight, body.offsetHeight, elem.scrollHeight, elem.offsetHeight, elem.clientHeight)
+		B: Math.max(body.scrollHeight, body.offsetHeight, elem.scrollHeight, elem.offsetHeight, elem.clientHeight)
 	};
 }
 
@@ -4422,13 +4422,13 @@ function _Browser_getViewportOf(id)
 		return {
 			aT: {
 				H: node.scrollWidth,
-				C: node.scrollHeight
+				B: node.scrollHeight
 			},
 			aZ: {
 				W: node.scrollLeft,
 				X: node.scrollTop,
 				H: node.clientWidth,
-				C: node.clientHeight
+				B: node.clientHeight
 			}
 		};
 	});
@@ -4463,13 +4463,13 @@ function _Browser_getElement(id)
 				W: x,
 				X: y,
 				H: _Browser_doc.documentElement.clientWidth,
-				C: _Browser_doc.documentElement.clientHeight
+				B: _Browser_doc.documentElement.clientHeight
 			},
 			a5: {
 				W: x + rect.left,
 				X: y + rect.top,
 				H: rect.width,
-				C: rect.height
+				B: rect.height
 			}
 		};
 	});
@@ -5316,7 +5316,7 @@ var author$project$Server$Route$toString = function (route) {
 				_List_Nil);
 		case 1:
 			var name = route.a.f;
-			var hashedPassword = route.a.w;
+			var hashedPassword = route.a.v;
 			return A2(
 				elm$url$Url$Builder$absolute,
 				_List_fromArray(
@@ -5336,7 +5336,7 @@ var author$project$Server$Route$toString = function (route) {
 				_List_Nil);
 		case 2:
 			var name = route.a.f;
-			var hashedPassword = route.a.w;
+			var hashedPassword = route.a.v;
 			return A2(
 				elm$url$Url$Builder$absolute,
 				_List_fromArray(
@@ -6091,7 +6091,7 @@ var author$project$Client$Main$sendRequest = F3(
 					elm$core$Maybe$map,
 					function (_n2) {
 						var name = _n2.f;
-						var hashedPassword = _n2.w;
+						var hashedPassword = _n2.v;
 						return _List_fromArray(
 							[
 								A2(elm$http$Http$header, 'x-username', name),
@@ -6163,15 +6163,15 @@ var author$project$Server$Route$RefreshAnonymous = {$: 4};
 var krisajenkins$remotedata$RemoteData$NotAsked = {$: 0};
 var author$project$Client$Main$init = F3(
 	function (_n0, url, key) {
-		var serverEndpoint = _n0.n;
+		var serverEndpoint = _n0.E;
 		return _Utils_Tuple2(
 			{
 				aE: key,
-				n: serverEndpoint,
+				E: serverEndpoint,
 				e: A2(
 					author$project$Client$Main$Anonymous,
 					krisajenkins$remotedata$RemoteData$NotAsked,
-					{f: '', z: ''})
+					{f: '', y: ''})
 			},
 			A3(author$project$Client$Main$sendRequest, serverEndpoint, author$project$Server$Route$RefreshAnonymous, elm$core$Maybe$Nothing));
 	});
@@ -6231,7 +6231,7 @@ var author$project$Client$Main$addMessages = F2(
 				return _Utils_update(
 					user,
 					{
-						p: _Utils_ap(user.p, messages)
+						o: _Utils_ap(user.o, messages)
 					});
 			},
 			model);
@@ -6261,9 +6261,9 @@ var author$project$Client$Main$getAuth = function (model) {
 			return elm$core$Maybe$Nothing;
 		default:
 			var name = _n0.a.f;
-			var hashedPassword = _n0.a.w;
+			var hashedPassword = _n0.a.v;
 			return elm$core$Maybe$Just(
-				{w: hashedPassword, f: name});
+				{v: hashedPassword, f: name});
 	}
 };
 var krisajenkins$remotedata$RemoteData$Loading = {$: 1};
@@ -6361,7 +6361,7 @@ var author$project$Client$Main$logoutUser = function (model) {
 						return A2(
 							author$project$Client$Main$Anonymous,
 							A2(krisajenkins$remotedata$RemoteData$map, author$project$Shared$World$clientToAnonymous, world),
-							{f: name, z: ''});
+							{f: name, y: ''});
 				}
 			}()
 		});
@@ -6517,7 +6517,7 @@ var author$project$Client$Main$setPassword = F2(
 			function (form) {
 				return _Utils_update(
 					form,
-					{z: password});
+					{y: password});
 			},
 			model);
 	});
@@ -6588,7 +6588,7 @@ var author$project$Client$Main$updateMessages = F2(
 				return _Utils_update(
 					user,
 					{
-						p: _Utils_ap(user.p, messageQueue)
+						o: _Utils_ap(user.o, messageQueue)
 					});
 			},
 			model);
@@ -7500,6 +7500,7 @@ var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var author$project$Client$Main$update = F2(
 	function (msg, model) {
+		var serverEndpoint = model.E;
 		switch (msg.$) {
 			case 0:
 				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
@@ -7533,7 +7534,7 @@ var author$project$Client$Main$update = F2(
 							author$project$Client$Main$setWorldAsLoading(model),
 							A3(
 								author$project$Client$Main$sendRequest,
-								model.n,
+								serverEndpoint,
 								route,
 								elm$core$Maybe$Just(auth)));
 					case 2:
@@ -7543,7 +7544,7 @@ var author$project$Client$Main$update = F2(
 							author$project$Client$Main$setWorldAsLoading(model),
 							A3(
 								author$project$Client$Main$sendRequest,
-								model.n,
+								serverEndpoint,
 								route,
 								elm$core$Maybe$Just(auth)));
 					case 6:
@@ -7555,14 +7556,14 @@ var author$project$Client$Main$update = F2(
 									return krisajenkins$remotedata$RemoteData$Loading;
 								},
 								model),
-							A3(author$project$Client$Main$sendRequest, model.n, route, elm$core$Maybe$Nothing));
+							A3(author$project$Client$Main$sendRequest, serverEndpoint, route, elm$core$Maybe$Nothing));
 					case 5:
 						var route = msg.a;
 						return _Utils_Tuple2(
 							author$project$Client$Main$setWorldAsLoading(model),
 							A3(
 								author$project$Client$Main$sendRequest,
-								model.n,
+								serverEndpoint,
 								route,
 								author$project$Client$Main$getAuth(model)));
 					case 3:
@@ -7571,7 +7572,7 @@ var author$project$Client$Main$update = F2(
 							author$project$Client$Main$setWorldAsLoading(model),
 							A3(
 								author$project$Client$Main$sendRequest,
-								model.n,
+								serverEndpoint,
 								route,
 								author$project$Client$Main$getAuth(model)));
 					default:
@@ -7583,7 +7584,7 @@ var author$project$Client$Main$update = F2(
 									return krisajenkins$remotedata$RemoteData$Loading;
 								},
 								model),
-							A3(author$project$Client$Main$sendRequest, model.n, route, elm$core$Maybe$Nothing));
+							A3(author$project$Client$Main$sendRequest, serverEndpoint, route, elm$core$Maybe$Nothing));
 				}
 			case 4:
 				var response = msg.a;
@@ -7600,11 +7601,11 @@ var author$project$Client$Main$update = F2(
 										F2(
 											function (_n6, _n7) {
 												var name = _n7.f;
-												var password = _n7.z;
+												var password = _n7.y;
 												return author$project$Client$Main$LoggedIn(
 													{
-														w: author$project$Shared$Password$hash(password),
-														p: messageQueue,
+														v: author$project$Shared$Password$hash(password),
+														o: messageQueue,
 														f: name,
 														l: krisajenkins$remotedata$RemoteData$Success(world)
 													});
@@ -7652,11 +7653,11 @@ var author$project$Client$Main$update = F2(
 										F2(
 											function (_n10, _n11) {
 												var name = _n11.f;
-												var password = _n11.z;
+												var password = _n11.y;
 												return author$project$Client$Main$LoggedIn(
 													{
-														w: author$project$Shared$Password$hash(password),
-														p: messageQueue,
+														v: author$project$Shared$Password$hash(password),
+														o: messageQueue,
 														f: name,
 														l: krisajenkins$remotedata$RemoteData$Success(world)
 													});
@@ -8076,7 +8077,7 @@ var elm$html$Html$Events$onInput = function (tagger) {
 var author$project$Client$Main$viewCredentialsForm = F2(
 	function (_n0, maybeMessage) {
 		var name = _n0.f;
-		var password = _n0.z;
+		var password = _n0.y;
 		var unmetRules = A2(
 			elm$core$List$filterMap,
 			elm$core$Basics$identity,
@@ -8100,7 +8101,7 @@ var author$project$Client$Main$viewCredentialsForm = F2(
 							author$project$Client$Main$onClickRequest(
 							tagger(
 								{
-									w: author$project$Shared$Password$hash(password),
+									v: author$project$Shared$Password$hash(password),
 									f: name
 								}))
 						]),
@@ -8458,7 +8459,7 @@ var author$project$Client$Main$viewWorld = function (world) {
 var author$project$Client$Main$viewLoggedInUser = function (user) {
 	return _List_fromArray(
 		[
-			author$project$Client$Main$viewMessages(user.p),
+			author$project$Client$Main$viewMessages(user.o),
 			author$project$Client$Main$viewButtons(user.l),
 			author$project$Client$Main$viewWorld(user.l)
 		]);
@@ -8693,6 +8694,6 @@ _Platform_export({'Client':{'Main':{'init':author$project$Client$Main$main(
 		elm$json$Json$Decode$andThen,
 		function (serverEndpoint) {
 			return elm$json$Json$Decode$succeed(
-				{n: serverEndpoint});
+				{E: serverEndpoint});
 		},
 		A2(elm$json$Json$Decode$field, 'serverEndpoint', elm$json$Json$Decode$string)))(0)}}});}(this));
