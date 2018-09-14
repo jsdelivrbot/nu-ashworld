@@ -18,6 +18,7 @@ import Server.Route
         , LogoutResponse
         , RefreshAnonymousResponse
         , RefreshResponse
+        , Route(..)
         , SignupError
         , SignupResponse
         , toString
@@ -71,7 +72,7 @@ type Msg
     = NoOp
     | UrlRequested Browser.UrlRequest
     | UrlChanged Url
-    | Request Server.Route.Route
+    | Request Route
     | GetSignupResponse (WebData (Result SignupError SignupResponse))
     | GetLoginResponse (WebData (Result AuthError LoginResponse))
     | GetRefreshResponse (WebData (Result AuthError RefreshResponse))
@@ -95,12 +96,12 @@ main =
 
 
 init : Flags -> Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
-init flags url key =
+init { serverEndpoint } url key =
     ( { navigationKey = key
-      , serverEndpoint = flags.serverEndpoint
+      , serverEndpoint = serverEndpoint
       , user = Anonymous NotAsked { name = "", password = "" }
       }
-    , sendRequest flags.serverEndpoint Server.Route.RefreshAnonymous Nothing
+    , sendRequest serverEndpoint RefreshAnonymous Nothing
     )
 
 
@@ -134,43 +135,43 @@ update msg model =
             , Cmd.none
             )
 
-        Request Server.Route.NotFound ->
+        Request NotFound ->
             ( model
             , Cmd.none
             )
 
-        Request ((Server.Route.Signup auth) as route) ->
+        Request ((Signup auth) as route) ->
             ( model
                 |> setWorldAsLoading
             , sendRequest model.serverEndpoint route (Just auth)
             )
 
-        Request ((Server.Route.Login auth) as route) ->
+        Request ((Login auth) as route) ->
             ( model
                 |> setWorldAsLoading
             , sendRequest model.serverEndpoint route (Just auth)
             )
 
-        Request (Server.Route.Logout as route) ->
+        Request (Logout as route) ->
             ( -- TODO maybe logout on the client side optimistically?
               model
                 |> mapAnonymousWorld (\_ -> Loading)
             , sendRequest model.serverEndpoint route Nothing
             )
 
-        Request ((Server.Route.Attack _) as route) ->
+        Request ((Attack _) as route) ->
             ( model
                 |> setWorldAsLoading
             , sendRequest model.serverEndpoint route (getAuth model)
             )
 
-        Request (Server.Route.Refresh as route) ->
+        Request (Refresh as route) ->
             ( model
                 |> setWorldAsLoading
             , sendRequest model.serverEndpoint route (getAuth model)
             )
 
-        Request (Server.Route.RefreshAnonymous as route) ->
+        Request (RefreshAnonymous as route) ->
             ( model
                 |> mapAnonymousWorld (\_ -> Loading)
             , sendRequest model.serverEndpoint route Nothing
@@ -570,7 +571,7 @@ addMessages messages model =
         |> mapLoggedInUser (\user -> { user | messages = user.messages ++ messages })
 
 
-sendRequest : String -> Server.Route.Route -> Maybe Authentication -> Cmd Msg
+sendRequest : String -> Route -> Maybe Authentication -> Cmd Msg
 sendRequest serverEndpoint route maybeAuth =
     let
         authHeaders : Maybe Authentication -> List Http.Header
@@ -599,10 +600,10 @@ sendRequest serverEndpoint route maybeAuth =
                 |> Cmd.map tagger
     in
     case route of
-        Server.Route.NotFound ->
+        NotFound ->
             send (\_ -> NoOp) (JD.fail "Server route not found") Nothing
 
-        Server.Route.Signup _ ->
+        Signup _ ->
             send GetSignupResponse
                 (successOrErrorDecoder
                     Server.Route.signupDecoder
@@ -610,7 +611,7 @@ sendRequest serverEndpoint route maybeAuth =
                 )
                 Nothing
 
-        Server.Route.Login auth ->
+        Login auth ->
             send GetLoginResponse
                 (successOrErrorDecoder
                     Server.Route.loginDecoder
@@ -618,7 +619,7 @@ sendRequest serverEndpoint route maybeAuth =
                 )
                 Nothing
 
-        Server.Route.Refresh ->
+        Refresh ->
             send GetRefreshResponse
                 (successOrErrorDecoder
                     Server.Route.refreshDecoder
@@ -626,7 +627,7 @@ sendRequest serverEndpoint route maybeAuth =
                 )
                 maybeAuth
 
-        Server.Route.Attack _ ->
+        Attack _ ->
             send GetAttackResponse
                 (successOrErrorDecoder
                     Server.Route.attackDecoder
@@ -634,12 +635,12 @@ sendRequest serverEndpoint route maybeAuth =
                 )
                 maybeAuth
 
-        Server.Route.Logout ->
+        Logout ->
             send GetLogoutResponse
                 Server.Route.logoutDecoder
                 Nothing
 
-        Server.Route.RefreshAnonymous ->
+        RefreshAnonymous ->
             send GetRefreshAnonymousResponse
                 Server.Route.refreshAnonymousDecoder
                 Nothing
@@ -718,7 +719,7 @@ viewCredentialsForm { name, password } maybeMessage =
         hasUnmetRules =
             not (List.isEmpty unmetRules)
 
-        button : (Authentication -> Server.Route.Route) -> String -> Html Msg
+        button : (Authentication -> Route) -> String -> Html Msg
         button tagger label =
             H.button
                 (if hasUnmetRules then
@@ -750,8 +751,8 @@ viewCredentialsForm { name, password } maybeMessage =
             , HA.placeholder "Password"
             ]
             []
-        , button Server.Route.Signup "Signup"
-        , button Server.Route.Login "Login"
+        , button Signup "Signup"
+        , button Login "Login"
         , maybeMessage
             |> Maybe.map (\message -> H.div [] [ H.text message ])
             |> Maybe.withDefault (H.text "")
@@ -784,17 +785,17 @@ viewButtons world =
     H.div []
         [ H.button
             [ world
-                |> RemoteData.map (\_ -> onClickRequest Server.Route.Refresh)
+                |> RemoteData.map (\_ -> onClickRequest Refresh)
                 |> RemoteData.withDefault (HA.disabled True)
             ]
             [ H.text "Refresh" ]
         , H.button
-            [ onClickRequest Server.Route.Logout ]
+            [ onClickRequest Logout ]
             [ H.text "Logout" ]
         ]
 
 
-onClickRequest : Server.Route.Route -> Attribute Msg
+onClickRequest : Route -> Attribute Msg
 onClickRequest route =
     HE.onClick (Request route)
 
@@ -912,7 +913,7 @@ viewOtherPlayer player otherPlayer =
             [ H.button
                 [ if player.hp > 0 && otherPlayer.hp > 0 then
                     onClickRequest
-                        (Server.Route.Attack
+                        (Attack
                             { you = player.name
                             , them = otherPlayer.name
                             }

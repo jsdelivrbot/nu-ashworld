@@ -6162,17 +6162,18 @@ var author$project$Client$Main$sendRequest = F3(
 var author$project$Server$Route$RefreshAnonymous = {$: 4};
 var krisajenkins$remotedata$RemoteData$NotAsked = {$: 0};
 var author$project$Client$Main$init = F3(
-	function (flags, url, key) {
+	function (_n0, url, key) {
+		var serverEndpoint = _n0.n;
 		return _Utils_Tuple2(
 			{
 				aE: key,
-				n: flags.n,
+				n: serverEndpoint,
 				e: A2(
 					author$project$Client$Main$Anonymous,
 					krisajenkins$remotedata$RemoteData$NotAsked,
 					{f: '', z: ''})
 			},
-			A3(author$project$Client$Main$sendRequest, flags.n, author$project$Server$Route$RefreshAnonymous, elm$core$Maybe$Nothing));
+			A3(author$project$Client$Main$sendRequest, serverEndpoint, author$project$Server$Route$RefreshAnonymous, elm$core$Maybe$Nothing));
 	});
 var elm$core$Platform$Sub$batch = _Platform_batch;
 var elm$core$Platform$Sub$none = elm$core$Platform$Sub$batch(_List_Nil);
