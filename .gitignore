@@ -1,5 +1,4 @@
 node_modules/
 elm-stuff/
 dist/elm-server.js
-dist/elm-client.js
 .node-persist
