@@ -1,12 +1,17 @@
 module Shared.World
     exposing
-        ( ClientWorld
+        ( AnonymousClientWorld
+        , ClientWorld
         , ServerWorld
+        , anonymousDecoder
+        , clientToAnonymous
         , decoder
         , encode
+        , encodeAnonymous
         , encodeMaybe
         , encodeServer
         , serverDecoder
+        , serverToAnonymous
         , serverToClient
         )
 
@@ -25,6 +30,17 @@ type alias ServerWorld =
 type alias ClientWorld =
     { player : ClientPlayer
     , otherPlayers : List ClientOtherPlayer
+    }
+
+
+type alias AnonymousClientWorld =
+    { players : List ClientOtherPlayer
+    }
+
+
+clientToAnonymous : ClientWorld -> AnonymousClientWorld
+clientToAnonymous { player, otherPlayers } =
+    { players = Shared.Player.toOther player :: otherPlayers
     }
 
 
@@ -47,6 +63,15 @@ serverToClient playerName serverWorld =
             )
 
 
+serverToAnonymous : ServerWorld -> AnonymousClientWorld
+serverToAnonymous world =
+    { players =
+        world.players
+            |> Dict.values
+            |> List.map Shared.Player.serverToClientOther
+    }
+
+
 encode : ClientWorld -> JE.Value
 encode world =
     JE.object
@@ -55,6 +80,17 @@ encode world =
           , JE.list
                 Shared.Player.encodeOtherPlayer
                 world.otherPlayers
+          )
+        ]
+
+
+encodeAnonymous : AnonymousClientWorld -> JE.Value
+encodeAnonymous world =
+    JE.object
+        [ ( "players"
+          , JE.list
+                Shared.Player.encodeOtherPlayer
+                world.players
           )
         ]
 
@@ -77,6 +113,12 @@ decoder =
     JD.map2 ClientWorld
         (JD.field "player" Shared.Player.decoder)
         (JD.field "otherPlayers" (JD.list Shared.Player.otherPlayerDecoder))
+
+
+anonymousDecoder : Decoder AnonymousClientWorld
+anonymousDecoder =
+    JD.map AnonymousClientWorld
+        (JD.field "players" (JD.list Shared.Player.otherPlayerDecoder))
 
 
 encodeServer : ServerWorld -> JE.Value

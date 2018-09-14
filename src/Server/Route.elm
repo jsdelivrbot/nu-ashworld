@@ -4,6 +4,8 @@ module Server.Route
         , AttackResponse
         , AuthError(..)
         , LoginResponse
+        , LogoutResponse
+        , RefreshAnonymousResponse
         , RefreshResponse
         , Route(..)
         , SignupError(..)
@@ -16,14 +18,20 @@ module Server.Route
         , encodeAttackError
         , encodeAuthError
         , encodeLogin
+        , encodeLogout
         , encodeNotFound
         , encodeRefresh
+        , encodeRefreshAnonymous
         , encodeRefreshError
         , encodeSignup
         , encodeSignupError
         , fromString
         , loginDecoder
         , loginResponse
+        , logoutDecoder
+        , logoutResponse
+        , refreshAnonymousDecoder
+        , refreshAnonymousResponse
         , refreshDecoder
         , refreshResponse
         , signupDecoder
@@ -39,7 +47,12 @@ import Shared.Fight exposing (Fight)
 import Shared.MessageQueue
 import Shared.Password exposing (Authentication)
 import Shared.Player
-import Shared.World exposing (ClientWorld, ServerWorld)
+import Shared.World
+    exposing
+        ( AnonymousClientWorld
+        , ClientWorld
+        , ServerWorld
+        )
 import Url
 import Url.Builder
 import Url.Parser exposing ((</>), Parser)
@@ -50,7 +63,9 @@ type Route
     | Signup Authentication
     | Login Authentication
     | Refresh
+    | RefreshAnonymous
     | Attack AttackData
+    | Logout
 
 
 type alias AttackData =
@@ -71,9 +86,19 @@ type alias LoginResponse =
     }
 
 
+type alias LogoutResponse =
+    { world : AnonymousClientWorld
+    }
+
+
 type alias RefreshResponse =
     { world : ClientWorld
     , messageQueue : List String
+    }
+
+
+type alias RefreshAnonymousResponse =
+    { world : AnonymousClientWorld
     }
 
 
@@ -128,6 +153,11 @@ toString route =
                 [ "refresh" ]
                 []
 
+        RefreshAnonymous ->
+            Url.Builder.absolute
+                [ "refresh-anonymous" ]
+                []
+
         Login { name, hashedPassword } ->
             Url.Builder.absolute
                 [ "login"
@@ -143,6 +173,9 @@ toString route =
                 , them
                 ]
                 []
+
+        Logout ->
+            Url.Builder.absolute [ "logout" ] []
 
 
 
@@ -168,7 +201,9 @@ parser =
                     }
             )
             login
+        , Url.Parser.map Logout logout
         , Url.Parser.map Refresh refresh
+        , Url.Parser.map RefreshAnonymous refreshAnonymous
         , Url.Parser.map
             (\you them ->
                 Attack
@@ -190,9 +225,19 @@ login =
     Url.Parser.s "login" </> Url.Parser.string </> Url.Parser.string
 
 
+logout : Parser a a
+logout =
+    Url.Parser.s "logout"
+
+
 refresh : Parser a a
 refresh =
     Url.Parser.s "refresh"
+
+
+refreshAnonymous : Parser a a
+refreshAnonymous =
+    Url.Parser.s "refresh-anonymous"
 
 
 attack : Parser (String -> String -> a) a
@@ -354,6 +399,30 @@ loginDecoder =
 
 
 
+-- LOGOUT
+
+
+logoutResponse : ServerWorld -> LogoutResponse
+logoutResponse world =
+    world
+        |> Shared.World.serverToAnonymous
+        |> LogoutResponse
+
+
+encodeLogout : LogoutResponse -> JE.Value
+encodeLogout { world } =
+    JE.object
+        [ ( "world", Shared.World.encodeAnonymous world )
+        ]
+
+
+logoutDecoder : Decoder LogoutResponse
+logoutDecoder =
+    JD.map LogoutResponse
+        (JD.field "world" Shared.World.anonymousDecoder)
+
+
+
 -- REFRESH
 
 
@@ -382,6 +451,30 @@ refreshDecoder =
     JD.map2 RefreshResponse
         (JD.field "world" Shared.World.decoder)
         (JD.field "messageQueue" Shared.MessageQueue.decoder)
+
+
+
+-- REFRESH ANONYMOUS
+
+
+refreshAnonymousResponse : ServerWorld -> RefreshAnonymousResponse
+refreshAnonymousResponse world =
+    world
+        |> Shared.World.serverToAnonymous
+        |> RefreshAnonymousResponse
+
+
+encodeRefreshAnonymous : RefreshAnonymousResponse -> JE.Value
+encodeRefreshAnonymous { world } =
+    JE.object
+        [ ( "world", Shared.World.encodeAnonymous world )
+        ]
+
+
+refreshAnonymousDecoder : Decoder RefreshAnonymousResponse
+refreshAnonymousDecoder =
+    JD.map RefreshAnonymousResponse
+        (JD.field "world" Shared.World.anonymousDecoder)
 
 
 

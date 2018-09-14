@@ -12,6 +12,7 @@ module Shared.Player
         , serverDecoder
         , serverToClient
         , serverToClientOther
+        , toOther
         )
 
 import Json.Decode as JD exposing (Decoder)
@@ -40,6 +41,14 @@ type alias ServerPlayer =
     , messageQueue : List String
     , name : String
     , hashedPassword : String
+    }
+
+
+toOther : ClientPlayer -> ClientOtherPlayer
+toOther player =
+    { hp = player.hp
+    , xp = player.xp
+    , name = player.name
     }
 
 

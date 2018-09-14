@@ -141,8 +141,14 @@ update msg model =
                 Login auth ->
                     handleLogin auth response model
 
+                Logout ->
+                    handleLogout response model
+
                 Refresh ->
                     handleRefresh (authHeaders headers) response model
+
+                RefreshAnonymous ->
+                    handleRefreshAnonymous response model
 
                 Attack attackData ->
                     handleAttack (authHeaders headers) attackData response model
@@ -265,6 +271,16 @@ handleLogin auth response model =
         )
 
 
+handleLogout : JE.Value -> Model -> ( Model, Cmd Msg )
+handleLogout response model =
+    ( model
+    , sendHttpResponse response
+        (Server.Route.logoutResponse model.world
+            |> Server.Route.encodeLogout
+        )
+    )
+
+
 handleRefresh : Maybe Authentication -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleRefresh maybeAuth response model =
     maybeAuth
@@ -291,6 +307,16 @@ handleRefresh maybeAuth response model =
             ( model
             , sendHttpResponse response (Server.Route.encodeAuthError Server.Route.AuthenticationHeadersMissing)
             )
+
+
+handleRefreshAnonymous : JE.Value -> Model -> ( Model, Cmd Msg )
+handleRefreshAnonymous response model =
+    ( model
+    , sendHttpResponse response
+        (Server.Route.refreshAnonymousResponse model.world
+            |> Server.Route.encodeRefreshAnonymous
+        )
+    )
 
 
 handleAttack : Maybe Authentication -> AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )

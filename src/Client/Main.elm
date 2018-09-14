@@ -15,6 +15,8 @@ import Server.Route
         ( AttackResponse
         , AuthError(..)
         , LoginResponse
+        , LogoutResponse
+        , RefreshAnonymousResponse
         , RefreshResponse
         , SignupError
         , SignupResponse
@@ -25,7 +27,7 @@ import Shared.Level
 import Shared.MessageQueue
 import Shared.Password exposing (Authentication)
 import Shared.Player exposing (ClientOtherPlayer, ClientPlayer)
-import Shared.World exposing (ClientWorld)
+import Shared.World exposing (AnonymousClientWorld, ClientWorld)
 import Url exposing (Url)
 
 
@@ -42,12 +44,12 @@ type alias Model =
 
 
 type User
-    = Anonymous CredentialsForm
-    | SigningUp CredentialsForm
-    | SigningUpError SignupError CredentialsForm
-    | UnknownError String CredentialsForm
-    | LoggingIn CredentialsForm
-    | LoggingInError AuthError CredentialsForm
+    = Anonymous (WebData AnonymousClientWorld) CredentialsForm
+    | SigningUp (WebData AnonymousClientWorld) CredentialsForm
+    | SigningUpError SignupError (WebData AnonymousClientWorld) CredentialsForm
+    | UnknownError String (WebData AnonymousClientWorld) CredentialsForm
+    | LoggingIn (WebData AnonymousClientWorld) CredentialsForm
+    | LoggingInError AuthError (WebData AnonymousClientWorld) CredentialsForm
     | LoggedIn LoggedInUser
 
 
@@ -74,6 +76,8 @@ type Msg
     | GetLoginResponse (WebData (Result AuthError LoginResponse))
     | GetRefreshResponse (WebData (Result AuthError RefreshResponse))
     | GetAttackResponse (WebData (Result AuthError AttackResponse))
+    | GetLogoutResponse (WebData LogoutResponse)
+    | GetRefreshAnonymousResponse (WebData RefreshAnonymousResponse)
     | SetName String
     | SetPassword String
 
@@ -94,9 +98,9 @@ init : Flags -> Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
 init flags url key =
     ( { navigationKey = key
       , serverEndpoint = flags.serverEndpoint
-      , user = Anonymous { name = "", password = "" }
+      , user = Anonymous NotAsked { name = "", password = "" }
       }
-    , Cmd.none
+    , sendRequest flags.serverEndpoint Server.Route.RefreshAnonymous Nothing
     )
 
 
@@ -147,6 +151,13 @@ update msg model =
             , sendRequest model.serverEndpoint route (Just auth)
             )
 
+        Request (Server.Route.Logout as route) ->
+            ( -- TODO maybe logout on the client side optimistically?
+              model
+                |> mapAnonymousWorld (\_ -> Loading)
+            , sendRequest model.serverEndpoint route Nothing
+            )
+
         Request ((Server.Route.Attack _) as route) ->
             ( model
                 |> setWorldAsLoading
@@ -159,6 +170,12 @@ update msg model =
             , sendRequest model.serverEndpoint route (getAuth model)
             )
 
+        Request (Server.Route.RefreshAnonymous as route) ->
+            ( model
+                |> mapAnonymousWorld (\_ -> Loading)
+            , sendRequest model.serverEndpoint route Nothing
+            )
+
         GetSignupResponse response ->
             ( case response of
                 Success response_ ->
@@ -166,7 +183,7 @@ update msg model =
                         Ok { world, messageQueue } ->
                             model
                                 |> transitionUser
-                                    (\{ name, password } ->
+                                    (\_ { name, password } ->
                                         LoggedIn
                                             { name = name
                                             , hashedPassword = Shared.Password.hash password
@@ -200,7 +217,7 @@ update msg model =
                         Ok { world, messageQueue } ->
                             model
                                 |> transitionUser
-                                    (\{ name, password } ->
+                                    (\_ { name, password } ->
                                         LoggedIn
                                             { name = name
                                             , hashedPassword = Shared.Password.hash password
@@ -255,6 +272,31 @@ update msg model =
             , Cmd.none
             )
 
+        GetLogoutResponse response ->
+            ( case response of
+                Success response_ ->
+                    model
+                        |> logoutUser
+                        |> updateAnonymousWorld response_
+
+                Failure err ->
+                    -- TODO think about it
+                    model
+
+                NotAsked ->
+                    model
+
+                Loading ->
+                    model
+            , Cmd.none
+            )
+
+        GetRefreshAnonymousResponse response ->
+            ( model
+                |> mapAnonymousWorld (\_ -> RemoteData.map .world response)
+            , Cmd.none
+            )
+
 
 handleResponse :
     { ok : ok -> Model
@@ -285,8 +327,16 @@ type alias WithWorld a =
     { a | world : ClientWorld }
 
 
+type alias WithAnonymousWorld a =
+    { a | world : AnonymousClientWorld }
+
+
 type alias WithPlayer a =
     { a | player : ClientPlayer }
+
+
+type alias WithPlayers a =
+    { a | players : List ClientOtherPlayer }
 
 
 type alias WithOtherPlayers a =
@@ -297,53 +347,83 @@ type alias WithMessageQueue a =
     { a | messageQueue : List String }
 
 
-transitionUser : (CredentialsForm -> User) -> Model -> Model
+transitionUser : (WebData AnonymousClientWorld -> CredentialsForm -> User) -> Model -> Model
 transitionUser fn model =
     { model
         | user =
             case model.user of
-                Anonymous credentialsForm ->
-                    fn credentialsForm
+                Anonymous world credentialsForm ->
+                    fn world credentialsForm
 
-                SigningUp credentialsForm ->
-                    fn credentialsForm
+                SigningUp world credentialsForm ->
+                    fn world credentialsForm
 
-                SigningUpError _ credentialsForm ->
-                    fn credentialsForm
+                SigningUpError _ world credentialsForm ->
+                    fn world credentialsForm
 
-                UnknownError _ credentialsForm ->
-                    fn credentialsForm
+                UnknownError _ world credentialsForm ->
+                    fn world credentialsForm
 
-                LoggingIn credentialsForm ->
-                    fn credentialsForm
+                LoggingIn world credentialsForm ->
+                    fn world credentialsForm
 
-                LoggingInError _ credentialsForm ->
-                    fn credentialsForm
+                LoggingInError _ world credentialsForm ->
+                    fn world credentialsForm
 
                 LoggedIn _ ->
                     model.user
     }
 
 
+logoutUser : Model -> Model
+logoutUser model =
+    { model
+        | user =
+            case model.user of
+                Anonymous _ _ ->
+                    model.user
+
+                SigningUp world credentialsForm ->
+                    Anonymous world credentialsForm
+
+                SigningUpError _ world credentialsForm ->
+                    Anonymous world credentialsForm
+
+                UnknownError _ world credentialsForm ->
+                    Anonymous world credentialsForm
+
+                LoggingIn world credentialsForm ->
+                    Anonymous world credentialsForm
+
+                LoggingInError _ world credentialsForm ->
+                    Anonymous world credentialsForm
+
+                LoggedIn { name, world } ->
+                    Anonymous
+                        (world |> RemoteData.map Shared.World.clientToAnonymous)
+                        { name = name, password = "" }
+    }
+
+
 getAuth : Model -> Maybe Authentication
 getAuth model =
     case model.user of
-        Anonymous _ ->
+        Anonymous _ _ ->
             Nothing
 
-        SigningUp _ ->
+        SigningUp _ _ ->
             Nothing
 
-        SigningUpError _ _ ->
+        SigningUpError _ _ _ ->
             Nothing
 
-        UnknownError _ _ ->
+        UnknownError _ _ _ ->
             Nothing
 
-        LoggingIn _ ->
+        LoggingIn _ _ ->
             Nothing
 
-        LoggingInError _ _ ->
+        LoggingInError _ _ _ ->
             Nothing
 
         LoggedIn { name, hashedPassword } ->
@@ -358,23 +438,23 @@ mapCredentialsForm fn model =
     { model
         | user =
             case model.user of
-                Anonymous credentialsForm ->
-                    Anonymous (fn credentialsForm)
+                Anonymous world credentialsForm ->
+                    Anonymous world (fn credentialsForm)
 
-                SigningUp credentialsForm ->
-                    SigningUp (fn credentialsForm)
+                SigningUp world credentialsForm ->
+                    SigningUp world (fn credentialsForm)
 
-                SigningUpError error credentialsForm ->
-                    SigningUpError error (fn credentialsForm)
+                SigningUpError error world credentialsForm ->
+                    SigningUpError error world (fn credentialsForm)
 
-                UnknownError error credentialsForm ->
-                    UnknownError error (fn credentialsForm)
+                UnknownError error world credentialsForm ->
+                    UnknownError error world (fn credentialsForm)
 
-                LoggingIn credentialsForm ->
-                    LoggingIn (fn credentialsForm)
+                LoggingIn world credentialsForm ->
+                    LoggingIn world (fn credentialsForm)
 
-                LoggingInError error credentialsForm ->
-                    LoggingInError error (fn credentialsForm)
+                LoggingInError error world credentialsForm ->
+                    LoggingInError error world (fn credentialsForm)
 
                 LoggedIn _ ->
                     model.user
@@ -386,26 +466,54 @@ mapLoggedInUser fn model =
     { model
         | user =
             case model.user of
-                Anonymous _ ->
+                Anonymous _ _ ->
                     model.user
 
-                SigningUp _ ->
+                SigningUp _ _ ->
                     model.user
 
-                SigningUpError _ _ ->
+                SigningUpError _ _ _ ->
                     model.user
 
-                UnknownError _ _ ->
+                UnknownError _ _ _ ->
                     model.user
 
-                LoggingIn _ ->
+                LoggingIn _ _ ->
                     model.user
 
-                LoggingInError _ _ ->
+                LoggingInError _ _ _ ->
                     model.user
 
                 LoggedIn loggedInUser ->
                     LoggedIn (fn loggedInUser)
+    }
+
+
+mapAnonymousWorld : (WebData AnonymousClientWorld -> WebData AnonymousClientWorld) -> Model -> Model
+mapAnonymousWorld fn model =
+    { model
+        | user =
+            case model.user of
+                Anonymous world form ->
+                    Anonymous (fn world) form
+
+                SigningUp world form ->
+                    SigningUp (fn world) form
+
+                SigningUpError error world form ->
+                    SigningUpError error (fn world) form
+
+                UnknownError error world form ->
+                    UnknownError error (fn world) form
+
+                LoggingIn world form ->
+                    LoggingIn (fn world) form
+
+                LoggingInError error world form ->
+                    LoggingInError error (fn world) form
+
+                LoggedIn loggedInUser ->
+                    model.user
     }
 
 
@@ -425,6 +533,12 @@ updateWorld : WithWorld a -> Model -> Model
 updateWorld { world } model =
     model
         |> mapLoggedInUser (\user -> { user | world = Success world })
+
+
+updateAnonymousWorld : WithAnonymousWorld a -> Model -> Model
+updateAnonymousWorld { world } model =
+    model
+        |> mapAnonymousWorld (\_ -> Success world)
 
 
 emptyMessages : Model -> Model
@@ -520,6 +634,16 @@ sendRequest serverEndpoint route maybeAuth =
                 )
                 maybeAuth
 
+        Server.Route.Logout ->
+            send GetLogoutResponse
+                Server.Route.logoutDecoder
+                Nothing
+
+        Server.Route.RefreshAnonymous ->
+            send GetRefreshAnonymousResponse
+                Server.Route.refreshAnonymousDecoder
+                Nothing
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -531,31 +655,51 @@ view model =
     { title = "NuAshworld"
     , body =
         case model.user of
-            Anonymous credentialsForm ->
-                viewCredentialsForm credentialsForm Nothing
+            Anonymous world credentialsForm ->
+                viewAnonymous world credentialsForm Nothing
 
-            SigningUp _ ->
-                [ H.text "Signing up" ]
+            SigningUp world credentialsForm ->
+                viewAnonymous
+                    world
+                    credentialsForm
+                    (Just "Signing up")
 
-            SigningUpError signupError credentialsForm ->
-                viewCredentialsForm credentialsForm (Just (Server.Route.signupErrorToString signupError))
+            SigningUpError signupError world credentialsForm ->
+                viewAnonymous
+                    world
+                    credentialsForm
+                    (Just (Server.Route.signupErrorToString signupError))
 
-            UnknownError error credentialsForm ->
-                viewCredentialsForm credentialsForm (Just error)
+            UnknownError error world credentialsForm ->
+                viewAnonymous world
+                    credentialsForm
+                    (Just error)
 
-            LoggingIn _ ->
-                [ H.text "Logging in" ]
+            LoggingIn world credentialsForm ->
+                viewAnonymous
+                    world
+                    credentialsForm
+                    (Just "Logging in")
 
-            LoggingInError authError credentialsForm ->
-                viewCredentialsForm credentialsForm (Just (Server.Route.authErrorToString authError))
+            LoggingInError authError world credentialsForm ->
+                viewAnonymous world
+                    credentialsForm
+                    (Just (Server.Route.authErrorToString authError))
 
             LoggedIn loggedInUser ->
                 viewLoggedInUser loggedInUser
     }
 
 
-viewCredentialsForm : CredentialsForm -> Maybe String -> List (Html Msg)
-viewCredentialsForm { name, password } maybeError =
+viewAnonymous : WebData AnonymousClientWorld -> CredentialsForm -> Maybe String -> List (Html Msg)
+viewAnonymous world credentialsForm maybeMessage =
+    [ viewCredentialsForm credentialsForm maybeMessage
+    , viewAnonymousWorld world
+    ]
+
+
+viewCredentialsForm : CredentialsForm -> Maybe String -> Html Msg
+viewCredentialsForm { name, password } maybeMessage =
     let
         unmetRules : List String
         unmetRules =
@@ -592,25 +736,26 @@ viewCredentialsForm { name, password } maybeError =
                 )
                 [ H.text label ]
     in
-    [ H.input
-        [ HE.onInput SetName
-        , HA.value name
-        , HA.placeholder "Name"
+    H.div []
+        [ H.input
+            [ HE.onInput SetName
+            , HA.value name
+            , HA.placeholder "Name"
+            ]
+            []
+        , H.input
+            [ HE.onInput SetPassword
+            , HA.value password
+            , HA.type_ "password"
+            , HA.placeholder "Password"
+            ]
+            []
+        , button Server.Route.Signup "Signup"
+        , button Server.Route.Login "Login"
+        , maybeMessage
+            |> Maybe.map (\message -> H.div [] [ H.text message ])
+            |> Maybe.withDefault (H.text "")
         ]
-        []
-    , H.input
-        [ HE.onInput SetPassword
-        , HA.value password
-        , HA.type_ "password"
-        , HA.placeholder "Password"
-        ]
-        []
-    , button Server.Route.Signup "Signup"
-    , button Server.Route.Login "Login"
-    , maybeError
-        |> Maybe.map (\error -> H.div [] [ H.text error ])
-        |> Maybe.withDefault (H.text "")
-    ]
 
 
 viewLoggedInUser : LoggedInUser -> List (Html Msg)
@@ -643,6 +788,9 @@ viewButtons world =
                 |> RemoteData.withDefault (HA.disabled True)
             ]
             [ H.text "Refresh" ]
+        , H.button
+            [ onClickRequest Server.Route.Logout ]
+            [ H.text "Logout" ]
         ]
 
 
@@ -664,15 +812,26 @@ viewWorld world =
             H.text "Error :("
 
         Success world_ ->
-            viewLoadedWorld world_
+            H.div []
+                [ viewPlayer world_.player
+                , viewOtherPlayers world_
+                ]
 
 
-viewLoadedWorld : ClientWorld -> Html Msg
-viewLoadedWorld world =
-    H.div []
-        [ viewPlayer world.player
-        , viewOtherPlayers world
-        ]
+viewAnonymousWorld : WebData AnonymousClientWorld -> Html Msg
+viewAnonymousWorld world =
+    case world of
+        NotAsked ->
+            H.text "Eh, the game should probably ask the server for the world data - oops. Can you ping @janiczek?"
+
+        Loading ->
+            H.text "Loading"
+
+        Failure err ->
+            H.text "Error :("
+
+        Success world_ ->
+            viewPlayers world_
 
 
 viewPlayer : ClientPlayer -> Html Msg
@@ -702,6 +861,25 @@ viewPlayer player =
                         ++ " till the next level)"
                 ]
             ]
+        ]
+
+
+viewPlayers : WithPlayers a -> Html Msg
+viewPlayers { players } =
+    H.div []
+        [ H.strong [] [ H.text "Players:" ]
+        , if List.isEmpty players then
+            H.div [] [ H.text "There are none so far!" ]
+          else
+            H.table []
+                (H.tr []
+                    [ H.th [] [ H.text "Player" ]
+                    , H.th [] [ H.text "HP" ]
+                    , H.th [] [ H.text "Level" ]
+                    , H.th [] []
+                    ]
+                    :: List.map viewOtherPlayerAnonymous players
+                )
         ]
 
 
@@ -744,6 +922,15 @@ viewOtherPlayer player otherPlayer =
                 ]
                 [ H.text "Attack!" ]
             ]
+        ]
+
+
+viewOtherPlayerAnonymous : ClientOtherPlayer -> Html Msg
+viewOtherPlayerAnonymous { name, hp, xp } =
+    H.tr []
+        [ H.td [] [ H.text name ]
+        , H.td [] [ H.text (String.fromInt hp) ]
+        , H.td [] [ H.text (String.fromInt (Shared.Level.levelForXp xp)) ]
         ]
 
 
