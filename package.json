@@ -8,7 +8,10 @@
     "start:client": "yarn build:client && cd dist && live-server --port=4444 --watch=index.html,elm-client.js",
     "start:server": "yarn build:server && cd dist && nodemon -w server.js -w elm-server.js server.js",
     "start": "node dist/server.js",
-    "postinstall": "yarn build:server"
+    "postinstall": "yarn build:server",
+    "push:client": "git checkout gh-pages && git merge master && yarn build:client && git add . && git commit -m \"Deploy of client code\" && git push",
+    "push:server": "git checkout master && git push heroku master",
+    "push": "yarn push:client && yarn push:server"
   },
   "main": "dist/server.js",
   "engines": {
