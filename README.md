@@ -11,8 +11,6 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 
 > Roughly in the order of "I'd like to do this the most", `DESC`.
 
-- [ ] Logout
-- [ ] See list of players even when not logged in
 - [ ] Randomized fight
 - [ ] Timestamps in the messages
 - [ ] Visibility of some "next tick in/at ..." information
@@ -31,3 +29,5 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 - [x] Level up messages
 - [x] Persistence
 - [x] Actual authentication and security
+- [x] Logout
+- [x] See list of players even when not logged in
