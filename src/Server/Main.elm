@@ -246,7 +246,7 @@ handleSignup { name, hashedPassword } response model =
 nameExists : String -> ServerWorld -> Bool
 nameExists name world =
     world.players
-        |> Dict.filter (\_ player -> player.name == name)
+        |> Dict.filter (\_ player -> String.toLower player.name == String.toLower name)
         |> Dict.isEmpty
         |> not
 
