@@ -49,7 +49,12 @@ const db = new pg.Client({connectionString: dbConnectionString});
 
           } else {
 
-            console.log(`[NODE] Got request ${request.url}`)
+            const fromPlayer = request.headers['x-username']
+              ? ` from ${request.headers['x-username']}`
+              : '';
+
+            console.log(`[NODE] Got request ${request.url}${fromPlayer}`);
+            
             app.ports.httpRequests.send({
                 url: `${host}:${port}${request.url}`,
                 response,
