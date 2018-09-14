@@ -29,7 +29,11 @@ hash password =
 checksOut : Authentication -> ServerWorld -> Bool
 checksOut { name, hashedPassword } world =
     world.players
-        |> Dict.filter (\_ player -> player.name == name && player.hashedPassword == hashedPassword)
+        |> Dict.filter
+            (\_ player ->
+                (String.toLower player.name == String.toLower name)
+                    && (player.hashedPassword == hashedPassword)
+            )
         |> Dict.isEmpty
         |> not
 
