@@ -10,7 +10,7 @@ import Http
 import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE
 import RemoteData exposing (RemoteData(..), WebData)
-import Server.Route
+import Server.Route as Route
     exposing
         ( AttackResponse
         , AuthError(..)
@@ -26,7 +26,7 @@ import Server.Route
 import Shared.Fight exposing (Fight(..))
 import Shared.Level
 import Shared.MessageQueue
-import Shared.Password exposing (Authentication)
+import Shared.Password exposing (Auth)
 import Shared.Player exposing (ClientOtherPlayer, ClientPlayer)
 import Shared.World exposing (AnonymousClientWorld, ClientWorld)
 import Url exposing (Url)
@@ -406,7 +406,7 @@ logoutUser model =
     }
 
 
-getAuth : Model -> Maybe Authentication
+getAuth : Model -> Maybe Auth
 getAuth model =
     case model.user of
         Anonymous _ _ ->
@@ -571,10 +571,10 @@ addMessages messages model =
         |> mapLoggedInUser (\user -> { user | messages = user.messages ++ messages })
 
 
-sendRequest : String -> Route -> Maybe Authentication -> Cmd Msg
+sendRequest : String -> Route -> Maybe Auth -> Cmd Msg
 sendRequest serverEndpoint route maybeAuth =
     let
-        authHeaders : Maybe Authentication -> List Http.Header
+        authHeaders : Maybe Auth -> List Http.Header
         authHeaders maybeAuth_ =
             maybeAuth_
                 |> Maybe.map
@@ -585,12 +585,12 @@ sendRequest serverEndpoint route maybeAuth =
                     )
                 |> Maybe.withDefault []
 
-        send : (WebData a -> Msg) -> Decoder a -> Maybe Authentication -> Cmd Msg
+        send : (WebData a -> Msg) -> Decoder a -> Maybe Auth -> Cmd Msg
         send tagger decoder maybeAuth_ =
             Http.request
                 { method = "GET"
                 , headers = authHeaders maybeAuth_
-                , url = serverEndpoint ++ Server.Route.toString route
+                , url = serverEndpoint ++ Route.toString route
                 , body = Http.emptyBody
                 , expect = Http.expectJson decoder
                 , timeout = Nothing
@@ -606,43 +606,43 @@ sendRequest serverEndpoint route maybeAuth =
         Signup _ ->
             send GetSignupResponse
                 (successOrErrorDecoder
-                    Server.Route.signupDecoder
-                    Server.Route.signupErrorDecoder
+                    Route.handlers.signup.decoder
+                    Route.handlers.signup.errorDecoder
                 )
                 Nothing
 
         Login auth ->
             send GetLoginResponse
                 (successOrErrorDecoder
-                    Server.Route.loginDecoder
-                    Server.Route.authErrorDecoder
+                    Route.handlers.login.decoder
+                    Route.handlers.login.errorDecoder
                 )
                 Nothing
 
         Refresh ->
             send GetRefreshResponse
                 (successOrErrorDecoder
-                    Server.Route.refreshDecoder
-                    Server.Route.authErrorDecoder
+                    Route.handlers.refresh.decoder
+                    Route.handlers.refresh.errorDecoder
                 )
                 maybeAuth
 
         Attack _ ->
             send GetAttackResponse
                 (successOrErrorDecoder
-                    Server.Route.attackDecoder
-                    Server.Route.authErrorDecoder
+                    Route.handlers.attack.decoder
+                    Route.handlers.attack.errorDecoder
                 )
                 maybeAuth
 
         Logout ->
             send GetLogoutResponse
-                Server.Route.logoutDecoder
+                Route.handlers.logout.decoder
                 Nothing
 
         RefreshAnonymous ->
             send GetRefreshAnonymousResponse
-                Server.Route.refreshAnonymousDecoder
+                Route.handlers.refreshAnonymous.decoder
                 Nothing
 
 
@@ -665,11 +665,11 @@ view model =
                     credentialsForm
                     (Just "Signing up")
 
-            SigningUpError signupError world credentialsForm ->
+            SigningUpError error world credentialsForm ->
                 viewAnonymous
                     world
                     credentialsForm
-                    (Just (Server.Route.signupErrorToString signupError))
+                    (Just (Route.handlers.signup.errorToString error))
 
             UnknownError error world credentialsForm ->
                 viewAnonymous world
@@ -682,10 +682,10 @@ view model =
                     credentialsForm
                     (Just "Logging in")
 
-            LoggingInError authError world credentialsForm ->
+            LoggingInError error world credentialsForm ->
                 viewAnonymous world
                     credentialsForm
-                    (Just (Server.Route.authErrorToString authError))
+                    (Just (Route.handlers.login.errorToString error))
 
             LoggedIn loggedInUser ->
                 viewLoggedInUser loggedInUser
@@ -719,7 +719,7 @@ viewCredentialsForm { name, password } maybeMessage =
         hasUnmetRules =
             not (List.isEmpty unmetRules)
 
-        button : (Authentication -> Route) -> String -> Html Msg
+        button : (Auth -> Route) -> String -> Html Msg
         button tagger label =
             H.button
                 (if hasUnmetRules then

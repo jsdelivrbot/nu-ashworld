@@ -1,6 +1,6 @@
 module Shared.Password
     exposing
-        ( Authentication
+        ( Auth
         , checksOut
         , hash
         )
@@ -12,7 +12,7 @@ import Keccak
 import Shared.World exposing (ServerWorld)
 
 
-type alias Authentication =
+type alias Auth =
     { name : String
     , hashedPassword : String
     }
@@ -26,7 +26,7 @@ hash password =
         |> listToHex
 
 
-checksOut : Authentication -> ServerWorld -> Bool
+checksOut : Auth -> ServerWorld -> Bool
 checksOut { name, hashedPassword } world =
     world.players
         |> Dict.filter

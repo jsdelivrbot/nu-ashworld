@@ -5,10 +5,16 @@ import Extra.Json as EJ
 import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE
 import Platform
-import Server.Route exposing (AttackData, Route(..))
+import Server.Route as Route
+    exposing
+        ( AttackData
+        , AuthError(..)
+        , Route(..)
+        , SignupError(..)
+        )
 import Server.World
 import Shared.Fight exposing (Fight(..))
-import Shared.Password exposing (Authentication)
+import Shared.Password exposing (Auth)
 import Shared.Player exposing (ServerPlayer)
 import Shared.World exposing (ServerWorld)
 import Time exposing (Posix)
@@ -131,7 +137,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         HttpRequest { url, response, headers } ->
-            case Server.Route.fromString url of
+            case Route.fromString url of
                 NotFound ->
                     handleNotFound url response model
 
@@ -175,9 +181,9 @@ update msg model =
             )
 
 
-authHeaders : Dict String String -> Maybe Authentication
+authHeaders : Dict String String -> Maybe Auth
 authHeaders headers =
-    Maybe.map2 Authentication
+    Maybe.map2 Auth
         (Dict.get "x-username" headers)
         (Dict.get "x-hashed-password" headers)
 
@@ -209,16 +215,17 @@ handleNotFound url response model =
     ( model
     , Cmd.batch
         [ log ("NotFound: " ++ url)
-        , sendHttpResponse response (Server.Route.encodeNotFound url)
+        , sendHttpResponse response (Route.handlers.notFound.encode url)
         ]
     )
 
 
-handleSignup : Authentication -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleSignup : Auth -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleSignup { name, hashedPassword } response model =
     if nameExists name model.world then
         ( model
-        , sendHttpResponse response (Server.Route.encodeSignupError Server.Route.NameAlreadyExists)
+        , sendHttpResponse response
+            (Route.handlers.signup.encodeError NameAlreadyExists)
         )
     else
         let
@@ -233,12 +240,12 @@ handleSignup { name, hashedPassword } response model =
         in
         ( newModel
         , sendHttpResponse response
-            (case Server.Route.signupResponse name newModel.world of
+            (case Route.handlers.signup.response name newModel.world of
                 Ok signupResponse ->
-                    Server.Route.encodeSignup signupResponse
+                    Route.handlers.signup.encode signupResponse
 
                 Err signupError ->
-                    Server.Route.encodeSignupError signupError
+                    Route.handlers.signup.encodeError signupError
             )
         )
 
@@ -251,7 +258,7 @@ nameExists name world =
         |> not
 
 
-handleLogin : Authentication -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleLogin : Auth -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleLogin auth response model =
     if Shared.Password.checksOut auth model.world then
         let
@@ -260,14 +267,14 @@ handleLogin auth response model =
         in
         ( newModel
         , sendHttpResponse response
-            (Server.Route.loginResponse messageQueue auth.name newModel.world
-                |> Maybe.map Server.Route.encodeLogin
-                |> Maybe.withDefault (Server.Route.encodeAuthError Server.Route.NameAndPasswordDoesntCheckOut)
+            (Route.handlers.login.response messageQueue auth.name newModel.world
+                |> Maybe.map Route.handlers.login.encode
+                |> Maybe.withDefault (Route.handlers.login.encodeError Route.NameAndPasswordDoesntCheckOut)
             )
         )
     else
         ( model
-        , sendHttpResponse response (Server.Route.encodeAuthError Server.Route.NameAndPasswordDoesntCheckOut)
+        , sendHttpResponse response (Route.handlers.login.encodeError Route.NameAndPasswordDoesntCheckOut)
         )
 
 
@@ -275,13 +282,13 @@ handleLogout : JE.Value -> Model -> ( Model, Cmd Msg )
 handleLogout response model =
     ( model
     , sendHttpResponse response
-        (Server.Route.logoutResponse model.world
-            |> Server.Route.encodeLogout
+        (Route.handlers.logout.response model.world
+            |> Route.handlers.logout.encode
         )
     )
 
 
-handleRefresh : Maybe Authentication -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleRefresh : Maybe Auth -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleRefresh maybeAuth response model =
     maybeAuth
         |> Maybe.map
@@ -293,19 +300,19 @@ handleRefresh maybeAuth response model =
                     in
                     ( newModel
                     , sendHttpResponse response
-                        (Server.Route.refreshResponse messageQueue auth.name newModel.world
-                            |> Maybe.map Server.Route.encodeRefresh
-                            |> Maybe.withDefault Server.Route.encodeRefreshError
+                        (Route.handlers.refresh.response messageQueue auth.name newModel.world
+                            |> Maybe.map Route.handlers.refresh.encode
+                            |> Maybe.withDefault (Route.handlers.refresh.encodeError NameNotFound)
                         )
                     )
                 else
                     ( model
-                    , sendHttpResponse response (Server.Route.encodeAuthError Server.Route.NameAndPasswordDoesntCheckOut)
+                    , sendHttpResponse response (Route.handlers.refresh.encodeError NameAndPasswordDoesntCheckOut)
                     )
             )
         |> Maybe.withDefault
             ( model
-            , sendHttpResponse response (Server.Route.encodeAuthError Server.Route.AuthenticationHeadersMissing)
+            , sendHttpResponse response (Route.handlers.refresh.encodeError AuthenticationHeadersMissing)
             )
 
 
@@ -313,13 +320,13 @@ handleRefreshAnonymous : JE.Value -> Model -> ( Model, Cmd Msg )
 handleRefreshAnonymous response model =
     ( model
     , sendHttpResponse response
-        (Server.Route.refreshAnonymousResponse model.world
-            |> Server.Route.encodeRefreshAnonymous
+        (Route.handlers.refreshAnonymous.response model.world
+            |> Route.handlers.refreshAnonymous.encode
         )
     )
 
 
-handleAttack : Maybe Authentication -> AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleAttack : Maybe Auth -> AttackData -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleAttack maybeAuth ({ you, them } as attackData) response model =
     maybeAuth
         |> Maybe.map
@@ -333,12 +340,12 @@ handleAttack maybeAuth ({ you, them } as attackData) response model =
                         handleAttackNobodyDead attackData response model
                 else
                     ( model
-                    , sendHttpResponse response (Server.Route.encodeAuthError Server.Route.NameAndPasswordDoesntCheckOut)
+                    , sendHttpResponse response (Route.handlers.attack.encodeError NameAndPasswordDoesntCheckOut)
                     )
             )
         |> Maybe.withDefault
             ( model
-            , sendHttpResponse response (Server.Route.encodeAuthError Server.Route.AuthenticationHeadersMissing)
+            , sendHttpResponse response (Route.handlers.attack.encodeError AuthenticationHeadersMissing)
             )
 
 
@@ -354,9 +361,9 @@ handleAttackYouDead { you } response model =
     in
     ( modelWithoutMessages
     , sendHttpResponse response
-        (Server.Route.attackResponse newMessageQueue you modelWithoutMessages.world Nothing
-            |> Maybe.map Server.Route.encodeAttack
-            |> Maybe.withDefault Server.Route.encodeAttackError
+        (Route.handlers.attack.response newMessageQueue you modelWithoutMessages.world Nothing
+            |> Maybe.map Route.handlers.attack.encode
+            |> Maybe.withDefault (Route.handlers.attack.encodeError NameNotFound)
         )
     )
 
@@ -373,9 +380,9 @@ handleAttackThemDead { you, them } response model =
     in
     ( modelWithoutMessages
     , sendHttpResponse response
-        (Server.Route.attackResponse newMessageQueue you modelWithoutMessages.world Nothing
-            |> Maybe.map Server.Route.encodeAttack
-            |> Maybe.withDefault Server.Route.encodeAttackError
+        (Route.handlers.attack.response newMessageQueue you modelWithoutMessages.world Nothing
+            |> Maybe.map Route.handlers.attack.encode
+            |> Maybe.withDefault (Route.handlers.attack.encodeError NameNotFound)
         )
     )
 
@@ -424,9 +431,9 @@ handleAttackNobodyDead { you, them } response model =
     in
     ( newModel
     , sendHttpResponse response
-        (Server.Route.attackResponse messageQueue you newModel.world (Just fight)
-            |> Maybe.map Server.Route.encodeAttack
-            |> Maybe.withDefault Server.Route.encodeAttackError
+        (Route.handlers.attack.response messageQueue you newModel.world (Just fight)
+            |> Maybe.map Route.handlers.attack.encode
+            |> Maybe.withDefault (Route.handlers.attack.encodeError NameNotFound)
         )
     )
 

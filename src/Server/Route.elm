@@ -10,34 +10,8 @@ module Server.Route
         , Route(..)
         , SignupError(..)
         , SignupResponse
-        , attackDecoder
-        , attackResponse
-        , authErrorDecoder
-        , authErrorToString
-        , encodeAttack
-        , encodeAttackError
-        , encodeAuthError
-        , encodeLogin
-        , encodeLogout
-        , encodeNotFound
-        , encodeRefresh
-        , encodeRefreshAnonymous
-        , encodeRefreshError
-        , encodeSignup
-        , encodeSignupError
         , fromString
-        , loginDecoder
-        , loginResponse
-        , logoutDecoder
-        , logoutResponse
-        , refreshAnonymousDecoder
-        , refreshAnonymousResponse
-        , refreshDecoder
-        , refreshResponse
-        , signupDecoder
-        , signupErrorDecoder
-        , signupErrorToString
-        , signupResponse
+        , handlers
         , toString
         )
 
@@ -45,7 +19,7 @@ import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE
 import Shared.Fight exposing (Fight)
 import Shared.MessageQueue
-import Shared.Password exposing (Authentication)
+import Shared.Password exposing (Auth)
 import Shared.Player
 import Shared.World
     exposing
@@ -60,23 +34,98 @@ import Url.Parser exposing ((</>), Parser)
 
 type Route
     = NotFound
-    | Signup Authentication
-    | Login Authentication
+    | Signup Auth
+    | Login Auth
     | Refresh
     | RefreshAnonymous
     | Attack AttackData
     | Logout
 
 
-type alias AttackData =
-    { you : String
-    , them : String
+handlers =
+    { notFound = notFound
+    , signup = signup
+    , login = login
+    , refresh = refresh
+    , attack = attack
+    , logout = logout
+    , refreshAnonymous = refreshAnonymous
     }
 
 
-type alias SignupResponse =
-    { world : ClientWorld
-    , messageQueue : List String
+notFound =
+    { encode = encodeNotFound
+    , toUrl = notFoundToUrl
+    }
+
+
+signup =
+    { toUrl = signupToUrl
+    , urlParser = signupUrlParser
+    , encode = encodeSignup
+    , encodeError = encodeSignupError
+    , decoder = signupDecoder
+    , errorDecoder = signupErrorDecoder
+    , response = signupResponse
+    , errorToString = signupErrorToString
+    }
+
+
+login =
+    { toUrl = loginToUrl
+    , urlParser = loginUrlParser
+    , encode = encodeLogin
+    , encodeError = encodeAuthError
+    , decoder = loginDecoder
+    , errorDecoder = authErrorDecoder
+    , response = loginResponse
+    , errorToString = authErrorToString
+    }
+
+
+refresh =
+    { toUrl = refreshToUrl
+    , urlParser = refreshUrlParser
+    , encode = encodeRefresh
+    , encodeError = encodeAuthError
+    , decoder = refreshDecoder
+    , errorDecoder = authErrorDecoder
+    , response = refreshResponse
+    }
+
+
+refreshAnonymous =
+    { toUrl = refreshAnonymousToUrl
+    , urlParser = refreshAnonymousUrlParser
+    , encode = encodeRefreshAnonymous
+    , decoder = refreshAnonymousDecoder
+    , response = refreshAnonymousResponse
+    }
+
+
+attack =
+    { toUrl = attackToUrl
+    , urlParser = attackUrlParser
+    , encode = encodeAttack
+    , encodeError = encodeAuthError
+    , decoder = attackDecoder
+    , errorDecoder = authErrorDecoder
+    , response = attackResponse
+    }
+
+
+logout =
+    { toUrl = logoutToUrl
+    , urlParser = logoutUrlParser
+    , encode = encodeLogout
+    , decoder = logoutDecoder
+    , response = logoutResponse
+    }
+
+
+type alias AttackData =
+    { you : String
+    , them : String
     }
 
 
@@ -117,6 +166,13 @@ type SignupError
 type AuthError
     = NameAndPasswordDoesntCheckOut
     | AuthenticationHeadersMissing
+    | NameNotFound
+
+
+type alias SignupResponse =
+    { world : ClientWorld
+    , messageQueue : List String
+    }
 
 
 
@@ -125,223 +181,78 @@ type AuthError
 
 fromString : String -> Route
 fromString string =
-    case Url.fromString string of
-        Nothing ->
-            NotFound
-
-        Just url ->
-            Url.Parser.parse parser url
-                |> Maybe.withDefault NotFound
+    string
+        |> Url.fromString
+        |> Maybe.andThen (Url.Parser.parse parser)
+        |> Maybe.withDefault NotFound
 
 
 toString : Route -> String
 toString route =
     case route of
         NotFound ->
-            Url.Builder.absolute [ "404" ] []
+            handlers.notFound.toUrl
 
-        Signup { name, hashedPassword } ->
-            Url.Builder.absolute
-                [ "signup"
-                , name
-                , hashedPassword
-                ]
-                []
+        Signup auth ->
+            handlers.signup.toUrl auth
 
         Refresh ->
-            Url.Builder.absolute
-                [ "refresh" ]
-                []
+            handlers.refresh.toUrl
 
         RefreshAnonymous ->
-            Url.Builder.absolute
-                [ "refresh-anonymous" ]
-                []
+            handlers.refreshAnonymous.toUrl
 
-        Login { name, hashedPassword } ->
-            Url.Builder.absolute
-                [ "login"
-                , name
-                , hashedPassword
-                ]
-                []
+        Login auth ->
+            handlers.login.toUrl auth
 
-        Attack { you, them } ->
-            Url.Builder.absolute
-                [ "attack"
-                , you
-                , them
-                ]
-                []
+        Attack attackData ->
+            handlers.attack.toUrl attackData
 
         Logout ->
-            Url.Builder.absolute [ "logout" ] []
-
-
-
--- PARSER
+            handlers.logout.toUrl
 
 
 parser : Parser (Route -> a) a
 parser =
     Url.Parser.oneOf
-        [ Url.Parser.map
-            (\name hashedPassword ->
-                Signup
-                    { name = name
-                    , hashedPassword = hashedPassword
-                    }
-            )
-            signup
-        , Url.Parser.map
-            (\name hashedPassword ->
-                Login
-                    { name = name
-                    , hashedPassword = hashedPassword
-                    }
-            )
-            login
-        , Url.Parser.map Logout logout
-        , Url.Parser.map Refresh refresh
-        , Url.Parser.map RefreshAnonymous refreshAnonymous
-        , Url.Parser.map
-            (\you them ->
-                Attack
-                    { you = you
-                    , them = them
-                    }
-            )
-            attack
+        [ handlers.signup.urlParser
+        , handlers.login.urlParser
+        , handlers.refresh.urlParser
+        , handlers.logout.urlParser
+        , handlers.refreshAnonymous.urlParser
+        , handlers.attack.urlParser
         ]
 
 
-signup : Parser (String -> String -> a) a
-signup =
-    Url.Parser.s "signup" </> Url.Parser.string </> Url.Parser.string
+{-| This is only here to make sure I don't forget to add the new route's parser.
+-}
+parserFailsafe : Route -> String
+parserFailsafe route =
+    case route of
+        NotFound ->
+            "yes I have added the new parser to `parser` above"
 
+        Signup auth ->
+            "yes I have added the new parser to `parser` above"
 
-login : Parser (String -> String -> a) a
-login =
-    Url.Parser.s "login" </> Url.Parser.string </> Url.Parser.string
+        Refresh ->
+            "yes I have added the new parser to `parser` above"
 
+        RefreshAnonymous ->
+            "yes I have added the new parser to `parser` above"
 
-logout : Parser a a
-logout =
-    Url.Parser.s "logout"
+        Login auth ->
+            "yes I have added the new parser to `parser` above"
 
+        Attack attackData ->
+            "yes I have added the new parser to `parser` above"
 
-refresh : Parser a a
-refresh =
-    Url.Parser.s "refresh"
-
-
-refreshAnonymous : Parser a a
-refreshAnonymous =
-    Url.Parser.s "refresh-anonymous"
-
-
-attack : Parser (String -> String -> a) a
-attack =
-    Url.Parser.s "attack" </> Url.Parser.string </> Url.Parser.string
+        Logout ->
+            "yes I have added the new parser to `parser` above"
 
 
 
--- NOT FOUND
-
-
-encodeNotFound : String -> JE.Value
-encodeNotFound url =
-    JE.object
-        [ ( "success", JE.bool False )
-        , ( "error", JE.string ("Route \"" ++ url ++ "\" not found.") )
-        ]
-
-
-
--- SIGNUP
-
-
-signupResponse : String -> ServerWorld -> Result SignupError SignupResponse
-signupResponse name world =
-    Shared.World.serverToClient name world
-        |> Result.fromMaybe CouldntFindNewlyCreatedUser
-        |> Result.map (\clientWorld -> SignupResponse clientWorld [])
-
-
-encodeSignup : SignupResponse -> JE.Value
-encodeSignup { world, messageQueue } =
-    JE.object
-        [ ( "world", Shared.World.encode world )
-        , ( "messageQueue", Shared.MessageQueue.encode messageQueue )
-        ]
-
-
-signupErrorToString : SignupError -> String
-signupErrorToString error =
-    case error of
-        NameAlreadyExists ->
-            "Name already exists"
-
-        CouldntFindNewlyCreatedUser ->
-            "Couldn't find newly created user"
-
-
-signupErrorFromString : String -> Maybe SignupError
-signupErrorFromString string =
-    case string of
-        "Name already exists" ->
-            Just NameAlreadyExists
-
-        "Couldn't find newly created user" ->
-            Just CouldntFindNewlyCreatedUser
-
-        _ ->
-            Nothing
-
-
-encodeSignupError : SignupError -> JE.Value
-encodeSignupError error =
-    JE.object
-        [ ( "error", JE.string (signupErrorToString error) ) ]
-
-
-signupErrorDecoder : Decoder SignupError
-signupErrorDecoder =
-    JD.field "error"
-        (JD.string
-            |> JD.andThen
-                (\string ->
-                    case signupErrorFromString string of
-                        Just error ->
-                            JD.succeed error
-
-                        Nothing ->
-                            JD.fail "Unknown SignupError"
-                )
-        )
-
-
-authErrorToString : AuthError -> String
-authErrorToString error =
-    case error of
-        NameAndPasswordDoesntCheckOut ->
-            "Name and password doesn't check out"
-
-        AuthenticationHeadersMissing ->
-            "Authentication headers missing"
-
-
-authErrorFromString : String -> Maybe AuthError
-authErrorFromString string =
-    case string of
-        "Name and password doesn't check out" ->
-            Just NameAndPasswordDoesntCheckOut
-
-        "Authentication headers missing" ->
-            Just AuthenticationHeadersMissing
-
-        _ ->
-            Nothing
+-- HELPERS
 
 
 encodeAuthError : AuthError -> JE.Value
@@ -366,6 +277,104 @@ authErrorDecoder =
         )
 
 
+authErrorToString : AuthError -> String
+authErrorToString error =
+    case error of
+        NameAndPasswordDoesntCheckOut ->
+            "Name and password doesn't check out"
+
+        AuthenticationHeadersMissing ->
+            "Authentication headers missing"
+
+        NameNotFound ->
+            "Name not found"
+
+
+authErrorFromString : String -> Maybe AuthError
+authErrorFromString string =
+    case string of
+        "Name and password doesn't check out" ->
+            Just NameAndPasswordDoesntCheckOut
+
+        "Authentication headers missing" ->
+            Just AuthenticationHeadersMissing
+
+        "Name not found" ->
+            Just NameNotFound
+
+        _ ->
+            Nothing
+
+
+
+-- NOT FOUND
+
+
+encodeNotFound : String -> JE.Value
+encodeNotFound url =
+    JE.object
+        [ ( "error", JE.string ("Route \"" ++ url ++ "\" not found.") )
+        ]
+
+
+notFoundToUrl : String
+notFoundToUrl =
+    Url.Builder.absolute [ "404" ] []
+
+
+
+-- SIGNUP
+
+
+signupToUrl : Auth -> String
+signupToUrl { name, hashedPassword } =
+    Url.Builder.absolute
+        [ "signup"
+        , name
+        , hashedPassword
+        ]
+        []
+
+
+signupUrlParser : Parser (Route -> a) a
+signupUrlParser =
+    Url.Parser.map
+        (\name hashedPassword ->
+            Signup
+                { name = name
+                , hashedPassword = hashedPassword
+                }
+        )
+        (Url.Parser.s "signup"
+            </> Url.Parser.string
+            </> Url.Parser.string
+        )
+
+
+encodeSignup : SignupResponse -> JE.Value
+encodeSignup { world, messageQueue } =
+    JE.object
+        [ ( "world", Shared.World.encode world )
+        , ( "messageQueue", Shared.MessageQueue.encode messageQueue )
+        ]
+
+
+encodeSignupError : SignupError -> JE.Value
+encodeSignupError error =
+    JE.object
+        [ ( "error", JE.string (signupErrorToString error) ) ]
+
+
+signupErrorToString : SignupError -> String
+signupErrorToString error =
+    case error of
+        NameAlreadyExists ->
+            "Name already exists"
+
+        CouldntFindNewlyCreatedUser ->
+            "Couldn't find newly created user"
+
+
 signupDecoder : Decoder SignupResponse
 signupDecoder =
     JD.map2 SignupResponse
@@ -373,14 +382,69 @@ signupDecoder =
         (JD.field "messageQueue" Shared.MessageQueue.decoder)
 
 
+signupResponse : String -> ServerWorld -> Result SignupError SignupResponse
+signupResponse name world =
+    Shared.World.serverToClient name world
+        |> Result.fromMaybe CouldntFindNewlyCreatedUser
+        |> Result.map (\clientWorld -> SignupResponse clientWorld [])
+
+
+signupErrorFromString : String -> Maybe SignupError
+signupErrorFromString string =
+    case string of
+        "Name already exists" ->
+            Just NameAlreadyExists
+
+        "Couldn't find newly created user" ->
+            Just CouldntFindNewlyCreatedUser
+
+        _ ->
+            Nothing
+
+
+signupErrorDecoder : Decoder SignupError
+signupErrorDecoder =
+    JD.field "error"
+        (JD.string
+            |> JD.andThen
+                (\string ->
+                    case signupErrorFromString string of
+                        Just error ->
+                            JD.succeed error
+
+                        Nothing ->
+                            JD.fail "Unknown SignupError"
+                )
+        )
+
+
 
 -- LOGIN
 
 
-loginResponse : List String -> String -> ServerWorld -> Maybe LoginResponse
-loginResponse messageQueue name world =
-    Shared.World.serverToClient name world
-        |> Maybe.map (\clientWorld -> LoginResponse clientWorld messageQueue)
+loginToUrl : Auth -> String
+loginToUrl { name, hashedPassword } =
+    Url.Builder.absolute
+        [ "login"
+        , name
+        , hashedPassword
+        ]
+        []
+
+
+loginUrlParser : Parser (Route -> a) a
+loginUrlParser =
+    Url.Parser.map
+        (\name hashedPassword ->
+            Login
+                { name = name
+                , hashedPassword = hashedPassword
+                }
+        )
+        (Url.Parser.s "login"
+            </> Url.Parser.string
+            </> Url.Parser.string
+        )
 
 
 encodeLogin : LoginResponse -> JE.Value
@@ -398,28 +462,10 @@ loginDecoder =
         (JD.field "messageQueue" Shared.MessageQueue.decoder)
 
 
-
--- LOGOUT
-
-
-logoutResponse : ServerWorld -> LogoutResponse
-logoutResponse world =
-    world
-        |> Shared.World.serverToAnonymous
-        |> LogoutResponse
-
-
-encodeLogout : LogoutResponse -> JE.Value
-encodeLogout { world } =
-    JE.object
-        [ ( "world", Shared.World.encodeAnonymous world )
-        ]
-
-
-logoutDecoder : Decoder LogoutResponse
-logoutDecoder =
-    JD.map LogoutResponse
-        (JD.field "world" Shared.World.anonymousDecoder)
+loginResponse : List String -> String -> ServerWorld -> Maybe LoginResponse
+loginResponse messageQueue name world =
+    Shared.World.serverToClient name world
+        |> Maybe.map (\clientWorld -> LoginResponse clientWorld messageQueue)
 
 
 
@@ -440,12 +486,6 @@ encodeRefresh { world, messageQueue } =
         ]
 
 
-encodeRefreshError : JE.Value
-encodeRefreshError =
-    JE.object
-        [ ( "error", JE.string "Couldn't find user" ) ]
-
-
 refreshDecoder : Decoder RefreshResponse
 refreshDecoder =
     JD.map2 RefreshResponse
@@ -453,15 +493,34 @@ refreshDecoder =
         (JD.field "messageQueue" Shared.MessageQueue.decoder)
 
 
+refreshToUrl : String
+refreshToUrl =
+    Url.Builder.absolute
+        [ "refresh" ]
+        []
+
+
+refreshUrlParser : Parser (Route -> a) a
+refreshUrlParser =
+    Url.Parser.map Refresh
+        (Url.Parser.s "refresh")
+
+
 
 -- REFRESH ANONYMOUS
 
 
-refreshAnonymousResponse : ServerWorld -> RefreshAnonymousResponse
-refreshAnonymousResponse world =
-    world
-        |> Shared.World.serverToAnonymous
-        |> RefreshAnonymousResponse
+refreshAnonymousToUrl : String
+refreshAnonymousToUrl =
+    Url.Builder.absolute
+        [ "refresh-anonymous" ]
+        []
+
+
+refreshAnonymousUrlParser : Parser (Route -> a) a
+refreshAnonymousUrlParser =
+    Url.Parser.map RefreshAnonymous
+        (Url.Parser.s "refresh-anonymous")
 
 
 encodeRefreshAnonymous : RefreshAnonymousResponse -> JE.Value
@@ -477,14 +536,40 @@ refreshAnonymousDecoder =
         (JD.field "world" Shared.World.anonymousDecoder)
 
 
+refreshAnonymousResponse : ServerWorld -> RefreshAnonymousResponse
+refreshAnonymousResponse world =
+    world
+        |> Shared.World.serverToAnonymous
+        |> RefreshAnonymousResponse
+
+
 
 -- ATTACK
 
 
-attackResponse : List String -> String -> ServerWorld -> Maybe Fight -> Maybe AttackResponse
-attackResponse messageQueue name world maybeFight =
-    Shared.World.serverToClient name world
-        |> Maybe.map (\clientWorld -> AttackResponse clientWorld messageQueue maybeFight)
+attackToUrl : AttackData -> String
+attackToUrl { you, them } =
+    Url.Builder.absolute
+        [ "attack"
+        , you
+        , them
+        ]
+        []
+
+
+attackUrlParser : Parser (Route -> a) a
+attackUrlParser =
+    Url.Parser.map
+        (\you them ->
+            Attack
+                { you = you
+                , them = them
+                }
+        )
+        (Url.Parser.s "attack"
+            </> Url.Parser.string
+            </> Url.Parser.string
+        )
 
 
 encodeAttack : AttackResponse -> JE.Value
@@ -496,15 +581,50 @@ encodeAttack { world, fight, messageQueue } =
         ]
 
 
-encodeAttackError : JE.Value
-encodeAttackError =
-    JE.object
-        [ ( "error", JE.string "Couldn't find user" ) ]
-
-
 attackDecoder : Decoder AttackResponse
 attackDecoder =
     JD.map3 AttackResponse
         (JD.field "world" Shared.World.decoder)
         (JD.field "messageQueue" Shared.MessageQueue.decoder)
         (JD.field "fight" Shared.Fight.maybeDecoder)
+
+
+attackResponse : List String -> String -> ServerWorld -> Maybe Fight -> Maybe AttackResponse
+attackResponse messageQueue name world maybeFight =
+    Shared.World.serverToClient name world
+        |> Maybe.map (\clientWorld -> AttackResponse clientWorld messageQueue maybeFight)
+
+
+
+-- LOGOUT
+
+
+logoutToUrl : String
+logoutToUrl =
+    Url.Builder.absolute [ "logout" ] []
+
+
+logoutUrlParser : Parser (Route -> a) a
+logoutUrlParser =
+    Url.Parser.map Logout
+        (Url.Parser.s "logout")
+
+
+logoutResponse : ServerWorld -> LogoutResponse
+logoutResponse world =
+    world
+        |> Shared.World.serverToAnonymous
+        |> LogoutResponse
+
+
+encodeLogout : LogoutResponse -> JE.Value
+encodeLogout { world } =
+    JE.object
+        [ ( "world", Shared.World.encodeAnonymous world )
+        ]
+
+
+logoutDecoder : Decoder LogoutResponse
+logoutDecoder =
+    JD.map LogoutResponse
+        (JD.field "world" Shared.World.anonymousDecoder)
