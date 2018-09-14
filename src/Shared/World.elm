@@ -125,33 +125,19 @@ encodeServer : ServerWorld -> JE.Value
 encodeServer world =
     JE.object
         [ ( "players"
-          , encodeDict
-                JE.string
+          , EJ.encodeDict
+                identity
                 Shared.Player.encodeServer
                 world.players
           )
         ]
 
 
-encodeDict : (comparable -> JE.Value) -> (a -> JE.Value) -> Dict comparable a -> JE.Value
-encodeDict encodeKey encodeValue dict =
-    let
-        encodeTuple : ( comparable, a ) -> JE.Value
-        encodeTuple ( key, value ) =
-            JE.list identity
-                [ encodeKey key
-                , encodeValue value
-                ]
-    in
-    JE.list encodeTuple (Dict.toList dict)
-
-
 serverDecoder : Decoder ServerWorld
 serverDecoder =
     JD.map ServerWorld
         (JD.field "players"
-            (EJ.dictFromList
-                JD.string
+            (EJ.dictFromObject
                 Shared.Player.serverDecoder
             )
         )
