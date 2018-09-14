@@ -49,6 +49,7 @@ const db = new pg.Client({connectionString: dbConnectionString});
 
           } else {
 
+            console.log(`[NODE] Got request ${request.url}`)
             app.ports.httpRequests.send({
                 url: `${host}:${port}${request.url}`,
                 response,
@@ -65,17 +66,13 @@ const db = new pg.Client({connectionString: dbConnectionString});
 const getPersistedData = async () => {
   const result = await db.query('SELECT data FROM persistence WHERE id = 0;');
   const data = result.rows[0].data;
-  console.log(`[SQL ] Loaded persisted data: ${data}`);
   return data;
 }
 
-const persistData = (dataString) => {
-  console.log(`[SQL ] Persisting data: ${dataString}`);
-  db.query(
+const persistData = (dataString) => db.query(
     'INSERT INTO persistence(id, data) VALUES (0, $1) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data;',
     [dataString]
-  );
-};
+);
 
 const createDbTableIfNeeded = (dataString) => db.query(`
   CREATE TABLE IF NOT EXISTS persistence(id NUMERIC UNIQUE, data TEXT);
