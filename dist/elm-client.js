@@ -770,11 +770,11 @@ function _Debug_crash_UNUSED(identifier, fact1, fact2, fact3, fact4)
 
 function _Debug_regionToString(region)
 {
-	if (region.as.S === region.aB.S)
+	if (region.ar.Q === region.aA.Q)
 	{
-		return 'on line ' + region.as.S;
+		return 'on line ' + region.ar.Q;
 	}
-	return 'on lines ' + region.as.S + ' through ' + region.aB.S;
+	return 'on lines ' + region.ar.Q + ' through ' + region.aA.Q;
 }
 
 
@@ -1841,9 +1841,9 @@ var _Platform_worker = F4(function(impl, flagDecoder, debugMetadata, args)
 	return _Platform_initialize(
 		flagDecoder,
 		args,
-		impl.bq,
-		impl.bH,
-		impl.bE,
+		impl.bp,
+		impl.bG,
+		impl.bD,
 		function() { return function() {} }
 	);
 });
@@ -2315,21 +2315,21 @@ var _Http_toTask = F2(function(request, maybeProgress)
 			callback(_Scheduler_fail(elm$http$Http$Timeout));
 		});
 		xhr.addEventListener('load', function() {
-			callback(_Http_handleResponse(xhr, request.bj.a));
+			callback(_Http_handleResponse(xhr, request.bi.a));
 		});
 
 		try
 		{
-			xhr.open(request.bu, request.bI, true);
+			xhr.open(request.bt, request.bH, true);
 		}
 		catch (e)
 		{
-			return callback(_Scheduler_fail(elm$http$Http$BadUrl(request.bI)));
+			return callback(_Scheduler_fail(elm$http$Http$BadUrl(request.bH)));
 		}
 
 		_Http_configureRequest(xhr, request);
 
-		var body = request.ax;
+		var body = request.aw;
 		xhr.send(elm$http$Http$Internal$isStringBody(body)
 			? (xhr.setRequestHeader('Content-Type', body.a), body.b)
 			: body.a
@@ -2352,23 +2352,23 @@ function _Http_configureProgress(xhr, maybeProgress)
 			return;
 		}
 		_Scheduler_rawSpawn(maybeProgress.a({
-			bd: event.loaded,
-			be: event.total
+			bc: event.loaded,
+			bd: event.total
 		}));
 	});
 }
 
 function _Http_configureRequest(xhr, request)
 {
-	for (var headers = request.bn; headers.b; headers = headers.b) // WHILE_CONS
+	for (var headers = request.bm; headers.b; headers = headers.b) // WHILE_CONS
 	{
 		xhr.setRequestHeader(headers.a.a, headers.a.b);
 	}
 
-	xhr.responseType = request.bj.b;
-	xhr.withCredentials = request.bK;
+	xhr.responseType = request.bi.b;
+	xhr.withCredentials = request.bJ;
 
-	elm$core$Maybe$isJust(request.bF) && (xhr.timeout = request.bF.a);
+	elm$core$Maybe$isJust(request.bE) && (xhr.timeout = request.bE.a);
 }
 
 
@@ -2400,10 +2400,10 @@ function _Http_handleResponse(xhr, responseToResult)
 function _Http_toResponse(xhr)
 {
 	return {
-		bI: xhr.responseURL,
-		bD: { bg: xhr.status, t: xhr.statusText },
-		bn: _Http_parseHeaders(xhr.getAllResponseHeaders()),
-		ax: xhr.response
+		bH: xhr.responseURL,
+		bC: { bf: xhr.status, r: xhr.statusText },
+		bm: _Http_parseHeaders(xhr.getAllResponseHeaders()),
+		aw: xhr.response
 	};
 }
 
@@ -2862,9 +2862,9 @@ var _VirtualDom_mapEventTuple = F2(function(func, tuple)
 var _VirtualDom_mapEventRecord = F2(function(func, record)
 {
 	return {
-		t: func(record.t),
-		at: record.at,
-		aq: record.aq
+		r: func(record.r),
+		as: record.as,
+		ap: record.ap
 	}
 });
 
@@ -3132,11 +3132,11 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 		// 3 = Custom
 
 		var value = result.a;
-		var message = !tag ? value : tag < 3 ? value.a : value.t;
-		var stopPropagation = tag == 1 ? value.b : tag == 3 && value.at;
+		var message = !tag ? value : tag < 3 ? value.a : value.r;
+		var stopPropagation = tag == 1 ? value.b : tag == 3 && value.as;
 		var currentEventNode = (
 			stopPropagation && event.stopPropagation(),
-			(tag == 2 ? value.b : tag == 3 && value.aq) && event.preventDefault(),
+			(tag == 2 ? value.b : tag == 3 && value.ap) && event.preventDefault(),
 			eventNode
 		);
 		var tagger;
@@ -4082,11 +4082,11 @@ var _Browser_element = _Debugger_element || F4(function(impl, flagDecoder, debug
 	return _Platform_initialize(
 		flagDecoder,
 		args,
-		impl.bq,
-		impl.bH,
-		impl.bE,
+		impl.bp,
+		impl.bG,
+		impl.bD,
 		function(sendToApp, initialModel) {
-			var view = impl.bJ;
+			var view = impl.bI;
 			/**/
 			var domNode = args['node'];
 			//*/
@@ -4118,12 +4118,12 @@ var _Browser_document = _Debugger_document || F4(function(impl, flagDecoder, deb
 	return _Platform_initialize(
 		flagDecoder,
 		args,
-		impl.bq,
-		impl.bH,
-		impl.bE,
+		impl.bp,
+		impl.bG,
+		impl.bD,
 		function(sendToApp, initialModel) {
-			var divertHrefToApp = impl.T && impl.T(sendToApp)
-			var view = impl.bJ;
+			var divertHrefToApp = impl.S && impl.S(sendToApp)
+			var view = impl.bI;
 			var title = _VirtualDom_doc.title;
 			var bodyNode = _VirtualDom_doc.body;
 			var currNode = _VirtualDom_virtualize(bodyNode);
@@ -4131,12 +4131,12 @@ var _Browser_document = _Debugger_document || F4(function(impl, flagDecoder, deb
 			{
 				_VirtualDom_divertHrefToApp = divertHrefToApp;
 				var doc = view(model);
-				var nextNode = _VirtualDom_node('body')(_List_Nil)(doc.ax);
+				var nextNode = _VirtualDom_node('body')(_List_Nil)(doc.aw);
 				var patches = _VirtualDom_diff(currNode, nextNode);
 				bodyNode = _VirtualDom_applyPatches(bodyNode, currNode, patches, sendToApp);
 				currNode = nextNode;
 				_VirtualDom_divertHrefToApp = 0;
-				(title !== doc.bG) && (_VirtualDom_doc.title = title = doc.bG);
+				(title !== doc.bF) && (_VirtualDom_doc.title = title = doc.bF);
 			});
 		}
 	);
@@ -4187,12 +4187,12 @@ function _Browser_makeAnimator(model, draw)
 
 function _Browser_application(impl)
 {
-	var onUrlChange = impl.bv;
-	var onUrlRequest = impl.bw;
+	var onUrlChange = impl.bu;
+	var onUrlRequest = impl.bv;
 	var key = function() { key.a(onUrlChange(_Browser_getUrl())); };
 
 	return _Browser_document({
-		T: function(sendToApp)
+		S: function(sendToApp)
 		{
 			key.a = sendToApp;
 			_Browser_window.addEventListener('popstate', key);
@@ -4208,9 +4208,9 @@ function _Browser_application(impl)
 					var next = elm$url$Url$fromString(href).a;
 					sendToApp(onUrlRequest(
 						(next
-							&& curr.aZ === next.aZ
-							&& curr.aJ === next.aJ
-							&& curr.aV.a === next.aV.a
+							&& curr.aY === next.aY
+							&& curr.aI === next.aI
+							&& curr.aU.a === next.aU.a
 						)
 							? elm$browser$Browser$Internal(next)
 							: elm$browser$Browser$External(href)
@@ -4218,13 +4218,13 @@ function _Browser_application(impl)
 				}
 			});
 		},
-		bq: function(flags)
+		bp: function(flags)
 		{
-			return A3(impl.bq, flags, _Browser_getUrl(), key);
+			return A3(impl.bp, flags, _Browser_getUrl(), key);
 		},
-		bJ: impl.bJ,
-		bH: impl.bH,
-		bE: impl.bE
+		bI: impl.bI,
+		bG: impl.bG,
+		bD: impl.bD
 	});
 }
 
@@ -4290,17 +4290,17 @@ var _Browser_decodeEvent = F2(function(decoder, event)
 function _Browser_visibilityInfo()
 {
 	return (typeof _VirtualDom_doc.hidden !== 'undefined')
-		? { bo: 'hidden', O: 'visibilitychange' }
+		? { bn: 'hidden', M: 'visibilitychange' }
 		:
 	(typeof _VirtualDom_doc.mozHidden !== 'undefined')
-		? { bo: 'mozHidden', O: 'mozvisibilitychange' }
+		? { bn: 'mozHidden', M: 'mozvisibilitychange' }
 		:
 	(typeof _VirtualDom_doc.msHidden !== 'undefined')
-		? { bo: 'msHidden', O: 'msvisibilitychange' }
+		? { bn: 'msHidden', M: 'msvisibilitychange' }
 		:
 	(typeof _VirtualDom_doc.webkitHidden !== 'undefined')
-		? { bo: 'webkitHidden', O: 'webkitvisibilitychange' }
-		: { bo: 'hidden', O: 'visibilitychange' };
+		? { bn: 'webkitHidden', M: 'webkitvisibilitychange' }
+		: { bn: 'hidden', M: 'visibilitychange' };
 }
 
 
@@ -4381,12 +4381,12 @@ var _Browser_call = F2(function(functionName, id)
 function _Browser_getViewport()
 {
 	return {
-		a4: _Browser_getScene(),
-		ba: {
-			ac: _Browser_window.pageXOffset,
-			ad: _Browser_window.pageYOffset,
-			M: _Browser_doc.documentElement.clientWidth,
-			F: _Browser_doc.documentElement.clientHeight
+		a3: _Browser_getScene(),
+		a9: {
+			ab: _Browser_window.pageXOffset,
+			ac: _Browser_window.pageYOffset,
+			K: _Browser_doc.documentElement.clientWidth,
+			C: _Browser_doc.documentElement.clientHeight
 		}
 	};
 }
@@ -4396,8 +4396,8 @@ function _Browser_getScene()
 	var body = _Browser_doc.body;
 	var elem = _Browser_doc.documentElement;
 	return {
-		M: Math.max(body.scrollWidth, body.offsetWidth, elem.scrollWidth, elem.offsetWidth, elem.clientWidth),
-		F: Math.max(body.scrollHeight, body.offsetHeight, elem.scrollHeight, elem.offsetHeight, elem.clientHeight)
+		K: Math.max(body.scrollWidth, body.offsetWidth, elem.scrollWidth, elem.offsetWidth, elem.clientWidth),
+		C: Math.max(body.scrollHeight, body.offsetHeight, elem.scrollHeight, elem.offsetHeight, elem.clientHeight)
 	};
 }
 
@@ -4420,15 +4420,15 @@ function _Browser_getViewportOf(id)
 	return _Browser_withNode(id, function(node)
 	{
 		return {
-			a4: {
-				M: node.scrollWidth,
-				F: node.scrollHeight
+			a3: {
+				K: node.scrollWidth,
+				C: node.scrollHeight
 			},
-			ba: {
-				ac: node.scrollLeft,
-				ad: node.scrollTop,
-				M: node.clientWidth,
-				F: node.clientHeight
+			a9: {
+				ab: node.scrollLeft,
+				ac: node.scrollTop,
+				K: node.clientWidth,
+				C: node.clientHeight
 			}
 		};
 	});
@@ -4458,18 +4458,18 @@ function _Browser_getElement(id)
 		var x = _Browser_window.pageXOffset;
 		var y = _Browser_window.pageYOffset;
 		return {
-			a4: _Browser_getScene(),
-			ba: {
-				ac: x,
-				ad: y,
-				M: _Browser_doc.documentElement.clientWidth,
-				F: _Browser_doc.documentElement.clientHeight
+			a3: _Browser_getScene(),
+			a9: {
+				ab: x,
+				ac: y,
+				K: _Browser_doc.documentElement.clientWidth,
+				C: _Browser_doc.documentElement.clientHeight
 			},
-			bi: {
-				ac: x + rect.left,
-				ad: y + rect.top,
-				M: rect.width,
-				F: rect.height
+			bh: {
+				ab: x + rect.left,
+				ac: y + rect.top,
+				K: rect.width,
+				C: rect.height
 			}
 		};
 	});
@@ -4510,10 +4510,6 @@ var author$project$Client$Main$UrlChanged = function (a) {
 var author$project$Client$Main$UrlRequested = function (a) {
 	return {$: 1, a: a};
 };
-var author$project$Client$Main$Anonymous = F2(
-	function (a, b) {
-		return {$: 0, a: a, b: b};
-	});
 var author$project$Client$Main$GetAttackResponse = function (a) {
 	return {$: 7, a: a};
 };
@@ -4727,25 +4723,25 @@ var elm$core$Basics$sub = _Basics_sub;
 var elm$core$Elm$JsArray$length = _JsArray_length;
 var elm$core$Array$builderToArray = F2(
 	function (reverseNodeList, builder) {
-		if (!builder.g) {
+		if (!builder.e) {
 			return A4(
 				elm$core$Array$Array_elm_builtin,
-				elm$core$Elm$JsArray$length(builder.i),
+				elm$core$Elm$JsArray$length(builder.g),
 				elm$core$Array$shiftStep,
 				elm$core$Elm$JsArray$empty,
-				builder.i);
+				builder.g);
 		} else {
-			var treeLen = builder.g * elm$core$Array$branchFactor;
+			var treeLen = builder.e * elm$core$Array$branchFactor;
 			var depth = elm$core$Basics$floor(
 				A2(elm$core$Basics$logBase, elm$core$Array$branchFactor, treeLen - 1));
-			var correctNodeList = reverseNodeList ? elm$core$List$reverse(builder.j) : builder.j;
-			var tree = A2(elm$core$Array$treeFromBuilder, correctNodeList, builder.g);
+			var correctNodeList = reverseNodeList ? elm$core$List$reverse(builder.h) : builder.h;
+			var tree = A2(elm$core$Array$treeFromBuilder, correctNodeList, builder.e);
 			return A4(
 				elm$core$Array$Array_elm_builtin,
-				elm$core$Elm$JsArray$length(builder.i) + treeLen,
+				elm$core$Elm$JsArray$length(builder.g) + treeLen,
 				A2(elm$core$Basics$max, 5, depth * elm$core$Array$shiftStep),
 				tree,
-				builder.i);
+				builder.g);
 		}
 	});
 var elm$core$Basics$False = 1;
@@ -4760,7 +4756,7 @@ var elm$core$Array$initializeHelp = F5(
 				return A2(
 					elm$core$Array$builderToArray,
 					false,
-					{j: nodeList, g: (len / elm$core$Array$branchFactor) | 0, i: tail});
+					{h: nodeList, e: (len / elm$core$Array$branchFactor) | 0, g: tail});
 			} else {
 				var leaf = elm$core$Array$Leaf(
 					A3(elm$core$Elm$JsArray$initialize, elm$core$Array$branchFactor, fromIndex, fn));
@@ -5038,7 +5034,7 @@ var author$project$Client$Main$successOrErrorDecoder = F2(
 	});
 var author$project$Server$Route$AttackResponse = F3(
 	function (world, messageQueue, fight) {
-		return {aF: fight, am: messageQueue, m: world};
+		return {aE: fight, al: messageQueue, p: world};
 	});
 var author$project$Shared$Fight$YouLost = 1;
 var author$project$Shared$Fight$YouWon = 0;
@@ -5071,7 +5067,7 @@ var elm$json$Json$Decode$list = _Json_decodeList;
 var author$project$Shared$MessageQueue$decoder = elm$json$Json$Decode$list(elm$json$Json$Decode$string);
 var author$project$Shared$Player$ClientPlayer = F4(
 	function (hp, maxHp, xp, name) {
-		return {Q: hp, bt: maxHp, f: name, _: xp};
+		return {O: hp, bs: maxHp, n: name, Z: xp};
 	});
 var elm$json$Json$Decode$field = _Json_decodeField;
 var elm$json$Json$Decode$int = _Json_decodeInt;
@@ -5085,7 +5081,7 @@ var author$project$Shared$Player$decoder = A5(
 	A2(elm$json$Json$Decode$field, 'name', elm$json$Json$Decode$string));
 var author$project$Shared$Player$ClientOtherPlayer = F3(
 	function (hp, xp, name) {
-		return {Q: hp, f: name, _: xp};
+		return {O: hp, n: name, Z: xp};
 	});
 var elm$json$Json$Decode$map3 = _Json_map3;
 var author$project$Shared$Player$otherPlayerDecoder = A4(
@@ -5096,7 +5092,7 @@ var author$project$Shared$Player$otherPlayerDecoder = A4(
 	A2(elm$json$Json$Decode$field, 'name', elm$json$Json$Decode$string));
 var author$project$Shared$World$ClientWorld = F2(
 	function (player, otherPlayers) {
-		return {by: otherPlayers, aU: player};
+		return {bx: otherPlayers, aT: player};
 	});
 var elm$json$Json$Decode$map2 = _Json_map2;
 var author$project$Shared$World$decoder = A3(
@@ -5113,18 +5109,18 @@ var author$project$Server$Route$attackDecoder = A4(
 	A2(elm$json$Json$Decode$field, 'world', author$project$Shared$World$decoder),
 	A2(elm$json$Json$Decode$field, 'messageQueue', author$project$Shared$MessageQueue$decoder),
 	A2(elm$json$Json$Decode$field, 'fight', author$project$Shared$Fight$maybeDecoder));
-var author$project$Shared$Player$serverToClient = function (player) {
-	var hp = player.Q;
-	var xp = player._;
-	var maxHp = player.bt;
-	var name = player.f;
-	return {Q: hp, bt: maxHp, f: name, _: xp};
+var author$project$Shared$Player$serverToClient = function (_n0) {
+	var hp = _n0.O;
+	var xp = _n0.Z;
+	var maxHp = _n0.bs;
+	var name = _n0.n;
+	return {O: hp, bs: maxHp, n: name, Z: xp};
 };
-var author$project$Shared$Player$serverToClientOther = function (player) {
-	var hp = player.Q;
-	var xp = player._;
-	var name = player.f;
-	return {Q: hp, f: name, _: xp};
+var author$project$Shared$Player$serverToClientOther = function (_n0) {
+	var hp = _n0.O;
+	var xp = _n0.Z;
+	var name = _n0.n;
+	return {O: hp, n: name, Z: xp};
 };
 var elm$core$Basics$composeR = F3(
 	function (f, g, x) {
@@ -5272,7 +5268,7 @@ var author$project$Shared$World$serverToClient = F2(
 						var name = _n1.a;
 						return _Utils_eq(name, playerName);
 					},
-					elm$core$Dict$toList(serverWorld.bz))));
+					elm$core$Dict$toList(serverWorld.by))));
 		var maybePlayer = _n0.a;
 		var otherPlayers = _n0.b;
 		return A2(
@@ -5280,8 +5276,8 @@ var author$project$Shared$World$serverToClient = F2(
 			function (_n2) {
 				var player = _n2.b;
 				return {
-					by: otherPlayers,
-					aU: author$project$Shared$Player$serverToClient(player)
+					bx: otherPlayers,
+					aT: author$project$Shared$Player$serverToClient(player)
 				};
 			},
 			maybePlayer);
@@ -5330,15 +5326,15 @@ var elm$core$Basics$identity = function (x) {
 var elm$url$Url$Parser$Parser = elm$core$Basics$identity;
 var elm$url$Url$Parser$State = F5(
 	function (visited, unvisited, params, frag, value) {
-		return {y: frag, B: params, w: unvisited, r: value, C: visited};
+		return {v: frag, x: params, t: unvisited, o: value, z: visited};
 	});
 var elm$url$Url$Parser$mapState = F2(
 	function (func, _n0) {
-		var visited = _n0.C;
-		var unvisited = _n0.w;
-		var params = _n0.B;
-		var frag = _n0.y;
-		var value = _n0.r;
+		var visited = _n0.z;
+		var unvisited = _n0.t;
+		var params = _n0.x;
+		var frag = _n0.v;
+		var value = _n0.o;
 		return A5(
 			elm$url$Url$Parser$State,
 			visited,
@@ -5351,11 +5347,11 @@ var elm$url$Url$Parser$map = F2(
 	function (subValue, _n0) {
 		var parseArg = _n0;
 		return function (_n1) {
-			var visited = _n1.C;
-			var unvisited = _n1.w;
-			var params = _n1.B;
-			var frag = _n1.y;
-			var value = _n1.r;
+			var visited = _n1.z;
+			var unvisited = _n1.t;
+			var params = _n1.x;
+			var frag = _n1.v;
+			var value = _n1.o;
 			return A2(
 				elm$core$List$map,
 				elm$url$Url$Parser$mapState(value),
@@ -5365,11 +5361,11 @@ var elm$url$Url$Parser$map = F2(
 	});
 var elm$url$Url$Parser$s = function (str) {
 	return function (_n0) {
-		var visited = _n0.C;
-		var unvisited = _n0.w;
-		var params = _n0.B;
-		var frag = _n0.y;
-		var value = _n0.r;
+		var visited = _n0.z;
+		var unvisited = _n0.t;
+		var params = _n0.x;
+		var frag = _n0.v;
+		var value = _n0.o;
 		if (!unvisited.b) {
 			return _List_Nil;
 		} else {
@@ -5418,11 +5414,11 @@ var elm$url$Url$Parser$slash = F2(
 var elm$url$Url$Parser$custom = F2(
 	function (tipe, stringToSomething) {
 		return function (_n0) {
-			var visited = _n0.C;
-			var unvisited = _n0.w;
-			var params = _n0.B;
-			var frag = _n0.y;
-			var value = _n0.r;
+			var visited = _n0.z;
+			var unvisited = _n0.t;
+			var params = _n0.x;
+			var frag = _n0.v;
+			var value = _n0.o;
 			if (!unvisited.b) {
 				return _List_Nil;
 			} else {
@@ -5538,28 +5534,32 @@ var elm$json$Json$Encode$object = function (pairs) {
 			_Json_emptyObject(0),
 			pairs));
 };
-var author$project$Shared$Player$encode = function (player) {
+var author$project$Shared$Player$encode = function (_n0) {
+	var hp = _n0.O;
+	var maxHp = _n0.bs;
+	var xp = _n0.Z;
+	var name = _n0.n;
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
 			[
 				_Utils_Tuple2(
 				'hp',
-				elm$json$Json$Encode$int(player.Q)),
+				elm$json$Json$Encode$int(hp)),
 				_Utils_Tuple2(
 				'maxHp',
-				elm$json$Json$Encode$int(player.bt)),
+				elm$json$Json$Encode$int(maxHp)),
 				_Utils_Tuple2(
 				'xp',
-				elm$json$Json$Encode$int(player._)),
+				elm$json$Json$Encode$int(xp)),
 				_Utils_Tuple2(
 				'name',
-				elm$json$Json$Encode$string(player.f))
+				elm$json$Json$Encode$string(name))
 			]));
 };
 var author$project$Shared$Player$encodeOtherPlayer = function (_n0) {
-	var hp = _n0.Q;
-	var xp = _n0._;
-	var name = _n0.f;
+	var hp = _n0.O;
+	var xp = _n0.Z;
+	var name = _n0.n;
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
 			[
@@ -5580,16 +5580,16 @@ var author$project$Shared$World$encode = function (world) {
 			[
 				_Utils_Tuple2(
 				'player',
-				author$project$Shared$Player$encode(world.aU)),
+				author$project$Shared$Player$encode(world.aT)),
 				_Utils_Tuple2(
 				'otherPlayers',
-				A2(elm$json$Json$Encode$list, author$project$Shared$Player$encodeOtherPlayer, world.by))
+				A2(elm$json$Json$Encode$list, author$project$Shared$Player$encodeOtherPlayer, world.bx))
 			]));
 };
 var author$project$Server$Route$encodeAttack = function (_n0) {
-	var world = _n0.m;
-	var fight = _n0.aF;
-	var messageQueue = _n0.am;
+	var world = _n0.p;
+	var fight = _n0.aE;
+	var messageQueue = _n0.al;
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
 			[
@@ -5624,10 +5624,10 @@ var author$project$Server$Route$encodeAuthError = function (error) {
 					author$project$Server$Route$authErrorToString(error)))
 			]));
 };
-var author$project$Server$Route$attack = {D: author$project$Server$Route$attackDecoder, x: author$project$Server$Route$encodeAttack, aa: author$project$Server$Route$encodeAuthError, ab: author$project$Server$Route$authErrorDecoder, I: author$project$Server$Route$attackResponse, k: author$project$Server$Route$attackToUrl, o: author$project$Server$Route$attackUrlParser};
+var author$project$Server$Route$attack = {A: author$project$Server$Route$attackDecoder, u: author$project$Server$Route$encodeAttack, _: author$project$Server$Route$encodeAuthError, aa: author$project$Server$Route$authErrorDecoder, G: author$project$Server$Route$attackResponse, i: author$project$Server$Route$attackToUrl, l: author$project$Server$Route$attackUrlParser};
 var author$project$Server$Route$encodeLogin = function (_n0) {
-	var world = _n0.m;
-	var messageQueue = _n0.am;
+	var world = _n0.p;
+	var messageQueue = _n0.al;
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
 			[
@@ -5641,7 +5641,7 @@ var author$project$Server$Route$encodeLogin = function (_n0) {
 };
 var author$project$Server$Route$LoginResponse = F2(
 	function (world, messageQueue) {
-		return {am: messageQueue, m: world};
+		return {al: messageQueue, p: world};
 	});
 var author$project$Server$Route$loginDecoder = A3(
 	elm$json$Json$Decode$map2,
@@ -5667,18 +5667,18 @@ var author$project$Server$Route$loginUrlParser = A2(
 	elm$url$Url$Parser$map,
 	author$project$Server$Route$Login,
 	elm$url$Url$Parser$s('login'));
-var author$project$Server$Route$login = {D: author$project$Server$Route$loginDecoder, x: author$project$Server$Route$encodeLogin, aa: author$project$Server$Route$encodeAuthError, ab: author$project$Server$Route$authErrorDecoder, aC: author$project$Server$Route$authErrorToString, I: author$project$Server$Route$loginResponse, k: author$project$Server$Route$loginToUrl, o: author$project$Server$Route$loginUrlParser};
+var author$project$Server$Route$login = {A: author$project$Server$Route$loginDecoder, u: author$project$Server$Route$encodeLogin, _: author$project$Server$Route$encodeAuthError, aa: author$project$Server$Route$authErrorDecoder, aB: author$project$Server$Route$authErrorToString, G: author$project$Server$Route$loginResponse, i: author$project$Server$Route$loginToUrl, l: author$project$Server$Route$loginUrlParser};
 var author$project$Shared$World$encodeAnonymous = function (world) {
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
 			[
 				_Utils_Tuple2(
 				'players',
-				A2(elm$json$Json$Encode$list, author$project$Shared$Player$encodeOtherPlayer, world.bz))
+				A2(elm$json$Json$Encode$list, author$project$Shared$Player$encodeOtherPlayer, world.by))
 			]));
 };
 var author$project$Server$Route$encodeLogout = function (_n0) {
-	var world = _n0.m;
+	var world = _n0.p;
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
 			[
@@ -5688,10 +5688,10 @@ var author$project$Server$Route$encodeLogout = function (_n0) {
 			]));
 };
 var author$project$Server$Route$LogoutResponse = function (world) {
-	return {m: world};
+	return {p: world};
 };
 var author$project$Shared$World$AnonymousClientWorld = function (players) {
-	return {bz: players};
+	return {by: players};
 };
 var author$project$Shared$World$anonymousDecoder = A2(
 	elm$json$Json$Decode$map,
@@ -5716,10 +5716,10 @@ var elm$core$Dict$values = function (dict) {
 };
 var author$project$Shared$World$serverToAnonymous = function (world) {
 	return {
-		bz: A2(
+		by: A2(
 			elm$core$List$map,
 			author$project$Shared$Player$serverToClientOther,
-			elm$core$Dict$values(world.bz))
+			elm$core$Dict$values(world.by))
 	};
 };
 var author$project$Server$Route$logoutResponse = function (world) {
@@ -5736,7 +5736,7 @@ var author$project$Server$Route$logoutUrlParser = A2(
 	elm$url$Url$Parser$map,
 	author$project$Server$Route$Logout,
 	elm$url$Url$Parser$s('logout'));
-var author$project$Server$Route$logout = {D: author$project$Server$Route$logoutDecoder, x: author$project$Server$Route$encodeLogout, I: author$project$Server$Route$logoutResponse, k: author$project$Server$Route$logoutToUrl, o: author$project$Server$Route$logoutUrlParser};
+var author$project$Server$Route$logout = {A: author$project$Server$Route$logoutDecoder, u: author$project$Server$Route$encodeLogout, G: author$project$Server$Route$logoutResponse, i: author$project$Server$Route$logoutToUrl, l: author$project$Server$Route$logoutUrlParser};
 var author$project$Server$Route$encodeNotFound = function (url) {
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
@@ -5751,10 +5751,10 @@ var author$project$Server$Route$notFoundToUrl = A2(
 	_List_fromArray(
 		['404']),
 	_List_Nil);
-var author$project$Server$Route$notFound = {x: author$project$Server$Route$encodeNotFound, k: author$project$Server$Route$notFoundToUrl};
+var author$project$Server$Route$notFound = {u: author$project$Server$Route$encodeNotFound, i: author$project$Server$Route$notFoundToUrl};
 var author$project$Server$Route$encodeRefresh = function (_n0) {
-	var world = _n0.m;
-	var messageQueue = _n0.am;
+	var world = _n0.p;
+	var messageQueue = _n0.al;
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
 			[
@@ -5768,7 +5768,7 @@ var author$project$Server$Route$encodeRefresh = function (_n0) {
 };
 var author$project$Server$Route$RefreshResponse = F2(
 	function (world, messageQueue) {
-		return {am: messageQueue, m: world};
+		return {al: messageQueue, p: world};
 	});
 var author$project$Server$Route$refreshDecoder = A3(
 	elm$json$Json$Decode$map2,
@@ -5794,9 +5794,9 @@ var author$project$Server$Route$refreshUrlParser = A2(
 	elm$url$Url$Parser$map,
 	author$project$Server$Route$Refresh,
 	elm$url$Url$Parser$s('refresh'));
-var author$project$Server$Route$refresh = {D: author$project$Server$Route$refreshDecoder, x: author$project$Server$Route$encodeRefresh, aa: author$project$Server$Route$encodeAuthError, ab: author$project$Server$Route$authErrorDecoder, I: author$project$Server$Route$refreshResponse, k: author$project$Server$Route$refreshToUrl, o: author$project$Server$Route$refreshUrlParser};
+var author$project$Server$Route$refresh = {A: author$project$Server$Route$refreshDecoder, u: author$project$Server$Route$encodeRefresh, _: author$project$Server$Route$encodeAuthError, aa: author$project$Server$Route$authErrorDecoder, G: author$project$Server$Route$refreshResponse, i: author$project$Server$Route$refreshToUrl, l: author$project$Server$Route$refreshUrlParser};
 var author$project$Server$Route$encodeRefreshAnonymous = function (_n0) {
-	var world = _n0.m;
+	var world = _n0.p;
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
 			[
@@ -5806,7 +5806,7 @@ var author$project$Server$Route$encodeRefreshAnonymous = function (_n0) {
 			]));
 };
 var author$project$Server$Route$RefreshAnonymousResponse = function (world) {
-	return {m: world};
+	return {p: world};
 };
 var author$project$Server$Route$refreshAnonymousDecoder = A2(
 	elm$json$Json$Decode$map,
@@ -5826,10 +5826,10 @@ var author$project$Server$Route$refreshAnonymousUrlParser = A2(
 	elm$url$Url$Parser$map,
 	author$project$Server$Route$RefreshAnonymous,
 	elm$url$Url$Parser$s('refresh-anonymous'));
-var author$project$Server$Route$refreshAnonymous = {D: author$project$Server$Route$refreshAnonymousDecoder, x: author$project$Server$Route$encodeRefreshAnonymous, I: author$project$Server$Route$refreshAnonymousResponse, k: author$project$Server$Route$refreshAnonymousToUrl, o: author$project$Server$Route$refreshAnonymousUrlParser};
+var author$project$Server$Route$refreshAnonymous = {A: author$project$Server$Route$refreshAnonymousDecoder, u: author$project$Server$Route$encodeRefreshAnonymous, G: author$project$Server$Route$refreshAnonymousResponse, i: author$project$Server$Route$refreshAnonymousToUrl, l: author$project$Server$Route$refreshAnonymousUrlParser};
 var author$project$Server$Route$encodeSignup = function (_n0) {
-	var world = _n0.m;
-	var messageQueue = _n0.am;
+	var world = _n0.p;
+	var messageQueue = _n0.al;
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
 			[
@@ -5864,7 +5864,7 @@ var author$project$Server$Route$encodeSignupError = function (error) {
 };
 var author$project$Server$Route$SignupResponse = F2(
 	function (world, messageQueue) {
-		return {am: messageQueue, m: world};
+		return {al: messageQueue, p: world};
 	});
 var author$project$Server$Route$signupDecoder = A3(
 	elm$json$Json$Decode$map2,
@@ -5946,26 +5946,30 @@ var author$project$Server$Route$signupUrlParser = A2(
 	elm$url$Url$Parser$map,
 	author$project$Server$Route$Signup,
 	elm$url$Url$Parser$s('signup'));
-var author$project$Server$Route$signup = {D: author$project$Server$Route$signupDecoder, x: author$project$Server$Route$encodeSignup, aa: author$project$Server$Route$encodeSignupError, ab: author$project$Server$Route$signupErrorDecoder, aC: author$project$Server$Route$signupErrorToString, I: author$project$Server$Route$signupResponse, k: author$project$Server$Route$signupToUrl, o: author$project$Server$Route$signupUrlParser};
-var author$project$Server$Route$handlers = {av: author$project$Server$Route$attack, al: author$project$Server$Route$login, bs: author$project$Server$Route$logout, aQ: author$project$Server$Route$notFound, a$: author$project$Server$Route$refresh, bA: author$project$Server$Route$refreshAnonymous, ar: author$project$Server$Route$signup};
+var author$project$Server$Route$signup = {A: author$project$Server$Route$signupDecoder, u: author$project$Server$Route$encodeSignup, _: author$project$Server$Route$encodeSignupError, aa: author$project$Server$Route$signupErrorDecoder, aB: author$project$Server$Route$signupErrorToString, G: author$project$Server$Route$signupResponse, i: author$project$Server$Route$signupToUrl, l: author$project$Server$Route$signupUrlParser};
+var author$project$Server$Route$handlers = {au: author$project$Server$Route$attack, ak: author$project$Server$Route$login, br: author$project$Server$Route$logout, aP: author$project$Server$Route$notFound, a_: author$project$Server$Route$refresh, bz: author$project$Server$Route$refreshAnonymous, aq: author$project$Server$Route$signup};
 var author$project$Server$Route$toString = function (route) {
 	switch (route.$) {
 		case 0:
-			return author$project$Server$Route$handlers.aQ.k;
+			return author$project$Server$Route$handlers.aP.i;
 		case 1:
-			return author$project$Server$Route$handlers.ar.k;
+			return author$project$Server$Route$handlers.aq.i;
 		case 3:
-			return author$project$Server$Route$handlers.a$.k;
+			return author$project$Server$Route$handlers.a_.i;
 		case 4:
-			return author$project$Server$Route$handlers.bA.k;
+			return author$project$Server$Route$handlers.bz.i;
 		case 2:
-			return author$project$Server$Route$handlers.al.k;
+			return author$project$Server$Route$handlers.ak.i;
 		case 5:
 			var theirName = route.a;
-			return author$project$Server$Route$handlers.av.k(theirName);
+			return author$project$Server$Route$handlers.au.i(theirName);
 		default:
-			return author$project$Server$Route$handlers.bs.k;
+			return author$project$Server$Route$handlers.br.i;
 	}
+};
+var author$project$Shared$Password$unwrapHashed = function (_n0) {
+	var p = _n0;
+	return p;
 };
 var elm$core$Platform$Cmd$map = _Platform_map;
 var elm$http$Http$Internal$EmptyBody = {$: 0};
@@ -6519,7 +6523,7 @@ var elm$json$Json$Decode$decodeString = _Json_runOnString;
 var elm$http$Http$expectJson = function (decoder) {
 	return elm$http$Http$expectStringResponse(
 		function (response) {
-			var _n0 = A2(elm$json$Json$Decode$decodeString, decoder, response.ax);
+			var _n0 = A2(elm$json$Json$Decode$decodeString, decoder, response.aw);
 			if (_n0.$ === 1) {
 				var decodeError = _n0.a;
 				return elm$core$Result$Err(
@@ -6666,12 +6670,15 @@ var author$project$Client$Main$sendRequest = F3(
 				A2(
 					elm$core$Maybe$map,
 					function (_n2) {
-						var name = _n2.f;
-						var hashedPassword = _n2.z;
+						var name = _n2.n;
+						var password = _n2.R;
 						return _List_fromArray(
 							[
 								A2(elm$http$Http$header, 'x-username', name),
-								A2(elm$http$Http$header, 'x-hashed-password', hashedPassword)
+								A2(
+								elm$http$Http$header,
+								'x-hashed-password',
+								author$project$Shared$Password$unwrapHashed(password))
 							]);
 					},
 					maybeAuth_));
@@ -6684,15 +6691,15 @@ var author$project$Client$Main$sendRequest = F3(
 					krisajenkins$remotedata$RemoteData$sendRequest(
 						elm$http$Http$request(
 							{
-								ax: elm$http$Http$emptyBody,
-								bj: elm$http$Http$expectJson(decoder),
-								bn: authHeaders(maybeAuth_),
-								bu: 'GET',
-								bF: elm$core$Maybe$Nothing,
-								bI: _Utils_ap(
+								aw: elm$http$Http$emptyBody,
+								bi: elm$http$Http$expectJson(decoder),
+								bm: authHeaders(maybeAuth_),
+								bt: 'GET',
+								bE: elm$core$Maybe$Nothing,
+								bH: _Utils_ap(
 									serverEndpoint,
 									author$project$Server$Route$toString(route)),
-								bK: false
+								bJ: false
 							})));
 			});
 		switch (route.$) {
@@ -6708,45 +6715,51 @@ var author$project$Client$Main$sendRequest = F3(
 				return A3(
 					send,
 					author$project$Client$Main$GetSignupResponse,
-					A2(author$project$Client$Main$successOrErrorDecoder, author$project$Server$Route$handlers.ar.D, author$project$Server$Route$handlers.ar.ab),
+					A2(author$project$Client$Main$successOrErrorDecoder, author$project$Server$Route$handlers.aq.A, author$project$Server$Route$handlers.aq.aa),
 					maybeAuth);
 			case 2:
 				return A3(
 					send,
 					author$project$Client$Main$GetLoginResponse,
-					A2(author$project$Client$Main$successOrErrorDecoder, author$project$Server$Route$handlers.al.D, author$project$Server$Route$handlers.al.ab),
+					A2(author$project$Client$Main$successOrErrorDecoder, author$project$Server$Route$handlers.ak.A, author$project$Server$Route$handlers.ak.aa),
 					maybeAuth);
 			case 3:
 				return A3(
 					send,
 					author$project$Client$Main$GetRefreshResponse,
-					A2(author$project$Client$Main$successOrErrorDecoder, author$project$Server$Route$handlers.a$.D, author$project$Server$Route$handlers.a$.ab),
+					A2(author$project$Client$Main$successOrErrorDecoder, author$project$Server$Route$handlers.a_.A, author$project$Server$Route$handlers.a_.aa),
 					maybeAuth);
 			case 5:
 				return A3(
 					send,
 					author$project$Client$Main$GetAttackResponse,
-					A2(author$project$Client$Main$successOrErrorDecoder, author$project$Server$Route$handlers.av.D, author$project$Server$Route$handlers.av.ab),
+					A2(author$project$Client$Main$successOrErrorDecoder, author$project$Server$Route$handlers.au.A, author$project$Server$Route$handlers.au.aa),
 					maybeAuth);
 			case 6:
-				return A3(send, author$project$Client$Main$GetLogoutResponse, author$project$Server$Route$handlers.bs.D, elm$core$Maybe$Nothing);
+				return A3(send, author$project$Client$Main$GetLogoutResponse, author$project$Server$Route$handlers.br.A, elm$core$Maybe$Nothing);
 			default:
-				return A3(send, author$project$Client$Main$GetRefreshAnonymousResponse, author$project$Server$Route$handlers.bA.D, elm$core$Maybe$Nothing);
+				return A3(send, author$project$Client$Main$GetRefreshAnonymousResponse, author$project$Server$Route$handlers.bz.A, elm$core$Maybe$Nothing);
 		}
 	});
+var author$project$Client$User$Anonymous = F2(
+	function (a, b) {
+		return {$: 0, a: a, b: b};
+	});
+var author$project$Shared$Password$Password = elm$core$Basics$identity;
+var author$project$Shared$Password$password = function (p) {
+	return p;
+};
+var author$project$Client$User$emptyForm = {
+	n: '',
+	R: author$project$Shared$Password$password('')
+};
 var krisajenkins$remotedata$RemoteData$NotAsked = {$: 0};
+var author$project$Client$User$init = A2(author$project$Client$User$Anonymous, krisajenkins$remotedata$RemoteData$NotAsked, author$project$Client$User$emptyForm);
 var author$project$Client$Main$init = F3(
 	function (_n0, url, key) {
-		var serverEndpoint = _n0.J;
+		var serverEndpoint = _n0.H;
 		return _Utils_Tuple2(
-			{
-				aP: key,
-				J: serverEndpoint,
-				e: A2(
-					author$project$Client$Main$Anonymous,
-					krisajenkins$remotedata$RemoteData$NotAsked,
-					{f: '', v: ''})
-			},
+			{aO: key, H: serverEndpoint, y: author$project$Client$User$init},
 			A3(author$project$Client$Main$sendRequest, serverEndpoint, author$project$Server$Route$RefreshAnonymous, elm$core$Maybe$Nothing));
 	});
 var elm$core$Platform$Sub$batch = _Platform_batch;
@@ -6754,60 +6767,119 @@ var elm$core$Platform$Sub$none = elm$core$Platform$Sub$batch(_List_Nil);
 var author$project$Client$Main$subscriptions = function (model) {
 	return elm$core$Platform$Sub$none;
 };
-var author$project$Client$Main$LoggedIn = function (a) {
-	return {$: 6, a: a};
-};
-var author$project$Client$Main$LoggingInError = F3(
-	function (a, b, c) {
-		return {$: 5, a: a, b: b, c: c};
-	});
-var author$project$Client$Main$SigningUpError = F3(
-	function (a, b, c) {
-		return {$: 2, a: a, b: b, c: c};
-	});
-var author$project$Client$Main$UnknownError = F3(
-	function (a, b, c) {
-		return {$: 3, a: a, b: b, c: c};
-	});
-var author$project$Client$Main$mapLoggedInUser = F2(
+var author$project$Client$Main$updateUser = F2(
 	function (fn, model) {
 		return _Utils_update(
 			model,
 			{
-				e: function () {
-					var _n0 = model.e;
-					switch (_n0.$) {
-						case 0:
-							return model.e;
-						case 1:
-							return model.e;
-						case 2:
-							return model.e;
-						case 3:
-							return model.e;
-						case 4:
-							return model.e;
-						case 5:
-							return model.e;
-						default:
-							var loggedInUser = _n0.a;
-							return author$project$Client$Main$LoggedIn(
-								fn(loggedInUser));
-					}
-				}()
+				y: fn(model.y)
 			});
+	});
+var author$project$Client$User$LoggedIn = function (a) {
+	return {$: 6, a: a};
+};
+var author$project$Client$User$LoggingIn = F2(
+	function (a, b) {
+		return {$: 4, a: a, b: b};
+	});
+var author$project$Client$User$LoggingInError = F3(
+	function (a, b, c) {
+		return {$: 5, a: a, b: b, c: c};
+	});
+var author$project$Client$User$SigningUp = F2(
+	function (a, b) {
+		return {$: 1, a: a, b: b};
+	});
+var author$project$Client$User$SigningUpError = F3(
+	function (a, b, c) {
+		return {$: 2, a: a, b: b, c: c};
+	});
+var author$project$Client$User$UnknownError = F3(
+	function (a, b, c) {
+		return {$: 3, a: a, b: b, c: c};
+	});
+var author$project$Client$User$map = F3(
+	function (fnLoggedOff, fnLoggedIn, user) {
+		var uncurry = F2(
+			function (f, _n1) {
+				var a = _n1.a;
+				var b = _n1.b;
+				return A2(f, a, b);
+			});
+		switch (user.$) {
+			case 0:
+				var world = user.a;
+				var form = user.b;
+				return A2(
+					uncurry,
+					author$project$Client$User$Anonymous,
+					fnLoggedOff(
+						_Utils_Tuple2(world, form)));
+			case 1:
+				var world = user.a;
+				var form = user.b;
+				return A2(
+					uncurry,
+					author$project$Client$User$SigningUp,
+					fnLoggedOff(
+						_Utils_Tuple2(world, form)));
+			case 2:
+				var error = user.a;
+				var world = user.b;
+				var form = user.c;
+				return A2(
+					uncurry,
+					author$project$Client$User$SigningUpError(error),
+					fnLoggedOff(
+						_Utils_Tuple2(world, form)));
+			case 3:
+				var error = user.a;
+				var world = user.b;
+				var form = user.c;
+				return A2(
+					uncurry,
+					author$project$Client$User$UnknownError(error),
+					fnLoggedOff(
+						_Utils_Tuple2(world, form)));
+			case 4:
+				var world = user.a;
+				var form = user.b;
+				return A2(
+					uncurry,
+					author$project$Client$User$LoggingIn,
+					fnLoggedOff(
+						_Utils_Tuple2(world, form)));
+			case 5:
+				var error = user.a;
+				var world = user.b;
+				var form = user.c;
+				return A2(
+					uncurry,
+					author$project$Client$User$LoggingInError(error),
+					fnLoggedOff(
+						_Utils_Tuple2(world, form)));
+			default:
+				var loggedInUser = user.a;
+				return author$project$Client$User$LoggedIn(
+					fnLoggedIn(loggedInUser));
+		}
+	});
+var author$project$Client$User$mapLoggedInUser = F2(
+	function (fn, user) {
+		return A3(author$project$Client$User$map, elm$core$Basics$identity, fn, user);
 	});
 var author$project$Client$Main$addMessages = F2(
 	function (messages, model) {
 		return A2(
-			author$project$Client$Main$mapLoggedInUser,
-			function (user) {
-				return _Utils_update(
-					user,
-					{
-						q: _Utils_ap(user.q, messages)
-					});
-			},
+			author$project$Client$Main$updateUser,
+			author$project$Client$User$mapLoggedInUser(
+				function (user) {
+					return _Utils_update(
+						user,
+						{
+							D: _Utils_ap(user.D, messages)
+						});
+				}),
 			model);
 	});
 var author$project$Client$Main$addMessage = F2(
@@ -6818,28 +6890,6 @@ var author$project$Client$Main$addMessage = F2(
 				[message]),
 			model);
 	});
-var author$project$Client$Main$getAuth = function (model) {
-	var _n0 = model.e;
-	switch (_n0.$) {
-		case 0:
-			return elm$core$Maybe$Nothing;
-		case 1:
-			return elm$core$Maybe$Nothing;
-		case 2:
-			return elm$core$Maybe$Nothing;
-		case 3:
-			return elm$core$Maybe$Nothing;
-		case 4:
-			return elm$core$Maybe$Nothing;
-		case 5:
-			return elm$core$Maybe$Nothing;
-		default:
-			var name = _n0.a.f;
-			var hashedPassword = _n0.a.z;
-			return elm$core$Maybe$Just(
-				{z: hashedPassword, f: name});
-	}
-};
 var elm$core$String$concat = function (strings) {
 	return A2(elm$core$String$join, '', strings);
 };
@@ -7178,11 +7228,11 @@ var prozacchiwawa$elm_keccak$Keccak$and64 = F2(
 var prozacchiwawa$elm_keccak$Keccak$five = A2(elm$core$List$range, 0, 4);
 var prozacchiwawa$elm_keccak$Keccak$gd = F2(
 	function (n, _n0) {
-		var d0 = _n0.ae;
-		var d1 = _n0.af;
-		var d2 = _n0.ag;
-		var d3 = _n0.ah;
-		var d4 = _n0.ai;
+		var d0 = _n0.ad;
+		var d1 = _n0.ae;
+		var d2 = _n0.af;
+		var d3 = _n0.ag;
+		var d4 = _n0.ah;
 		switch (n) {
 			case 0:
 				return d0;
@@ -7338,11 +7388,11 @@ var prozacchiwawa$elm_keccak$Keccak$chi = function (ss) {
 		F2(
 			function (y, state) {
 				var temp = {
-					ae: A3(prozacchiwawa$elm_keccak$Keccak$readLane, 0, y, ss.h),
-					af: A3(prozacchiwawa$elm_keccak$Keccak$readLane, 1, y, ss.h),
-					ag: A3(prozacchiwawa$elm_keccak$Keccak$readLane, 2, y, ss.h),
-					ah: A3(prozacchiwawa$elm_keccak$Keccak$readLane, 3, y, ss.h),
-					ai: A3(prozacchiwawa$elm_keccak$Keccak$readLane, 4, y, ss.h)
+					ad: A3(prozacchiwawa$elm_keccak$Keccak$readLane, 0, y, ss.f),
+					ae: A3(prozacchiwawa$elm_keccak$Keccak$readLane, 1, y, ss.f),
+					af: A3(prozacchiwawa$elm_keccak$Keccak$readLane, 2, y, ss.f),
+					ag: A3(prozacchiwawa$elm_keccak$Keccak$readLane, 3, y, ss.f),
+					ah: A3(prozacchiwawa$elm_keccak$Keccak$readLane, 4, y, ss.f)
 				};
 				var yupdate = F2(
 					function (x, state_) {
@@ -7380,15 +7430,15 @@ var prozacchiwawa$elm_keccak$Keccak$chi = function (ss) {
 								1,
 								A2(yupdate, 0, state)))));
 			}),
-		ss.h,
+		ss.f,
 		prozacchiwawa$elm_keccak$Keccak$five);
 	return _Utils_update(
 		ss,
-		{h: newState});
+		{f: newState});
 };
 var prozacchiwawa$elm_keccak$Keccak$zero = _Utils_Tuple2(0, 0);
 var prozacchiwawa$elm_keccak$Keccak$initRound = function (state) {
-	return {P: prozacchiwawa$elm_keccak$Keccak$zero, R: 1, h: state, ac: 1, ad: 0};
+	return {N: prozacchiwawa$elm_keccak$Keccak$zero, P: 1, f: state, ab: 1, ac: 0};
 };
 var prozacchiwawa$elm_keccak$Keccak$lfsr86540 = function (lfsr) {
 	var result = lfsr & 1;
@@ -7459,22 +7509,22 @@ var prozacchiwawa$elm_keccak$Keccak$iota = function (ss) {
 		F2(
 			function (j, ss_) {
 				var bitPosition = (1 << j) - 1;
-				var _n0 = prozacchiwawa$elm_keccak$Keccak$lfsr86540(ss_.R);
+				var _n0 = prozacchiwawa$elm_keccak$Keccak$lfsr86540(ss_.P);
 				var o = _n0.a;
 				var lfsr = _n0.b;
 				return o ? _Utils_update(
 					ss_,
 					{
-						R: lfsr,
-						h: A4(
+						P: lfsr,
+						f: A4(
 							prozacchiwawa$elm_keccak$Keccak$xorLane,
 							0,
 							0,
 							A2(prozacchiwawa$elm_keccak$Keccak$rol64, bitPosition, prozacchiwawa$elm_keccak$Keccak$one),
-							ss_.h)
+							ss_.f)
 					}) : _Utils_update(
 					ss_,
-					{R: lfsr});
+					{P: lfsr});
 			}),
 		ss,
 		A2(elm$core$List$range, 0, 6));
@@ -7485,28 +7535,28 @@ var prozacchiwawa$elm_keccak$Keccak$rhoPi = function (ss) {
 		elm$core$List$foldl,
 		F2(
 			function (t, ss_) {
-				var yy = A2(elm$core$Basics$modBy, 5, (2 * ss_.ac) + (3 * ss_.ad));
+				var yy = A2(elm$core$Basics$modBy, 5, (2 * ss_.ab) + (3 * ss_.ac));
 				var r = A2(elm$core$Basics$modBy, 64, (((t + 1) * (t + 2)) / 2) | 0);
 				return _Utils_update(
 					ss_,
 					{
-						P: A3(prozacchiwawa$elm_keccak$Keccak$readLane, ss_.ad, yy, ss_.h),
-						h: A4(
+						N: A3(prozacchiwawa$elm_keccak$Keccak$readLane, ss_.ac, yy, ss_.f),
+						f: A4(
 							prozacchiwawa$elm_keccak$Keccak$writeLane,
-							ss_.ad,
+							ss_.ac,
 							yy,
-							A2(prozacchiwawa$elm_keccak$Keccak$rol64, r, ss_.P),
-							ss_.h),
-						ac: ss_.ad,
-						ad: yy
+							A2(prozacchiwawa$elm_keccak$Keccak$rol64, r, ss_.N),
+							ss_.f),
+						ab: ss_.ac,
+						ac: yy
 					});
 			}),
 		_Utils_update(
 			ss,
 			{
-				P: A3(prozacchiwawa$elm_keccak$Keccak$readLane, 1, 0, ss.h),
-				ac: 1,
-				ad: 0
+				N: A3(prozacchiwawa$elm_keccak$Keccak$readLane, 1, 0, ss.f),
+				ab: 1,
+				ac: 0
 			}),
 		prozacchiwawa$elm_keccak$Keccak$twentyThree);
 };
@@ -7532,22 +7582,22 @@ var prozacchiwawa$elm_keccak$Keccak$theta = function (ss) {
 		var c4 = A2(
 			prozacchiwawa$elm_keccak$Keccak$cInitX,
 			A2(elm$core$Basics$modBy, 5, x + 4),
-			ss.h);
+			ss.f);
 		var c1 = A2(
 			prozacchiwawa$elm_keccak$Keccak$cInitX,
 			A2(elm$core$Basics$modBy, 5, x + 1),
-			ss.h);
+			ss.f);
 		return A2(
 			prozacchiwawa$elm_keccak$Keccak$xor64,
 			c4,
 			A2(prozacchiwawa$elm_keccak$Keccak$rol64, 1, c1));
 	};
 	var dx = {
-		ae: d(0),
-		af: d(1),
-		ag: d(2),
-		ah: d(3),
-		ai: d(4)
+		ad: d(0),
+		ae: d(1),
+		af: d(2),
+		ag: d(3),
+		ah: d(4)
 	};
 	var sd = A3(
 		elm$core$List$foldl,
@@ -7562,11 +7612,11 @@ var prozacchiwawa$elm_keccak$Keccak$theta = function (ss) {
 					A2(prozacchiwawa$elm_keccak$Keccak$gd, x, dx),
 					state);
 			}),
-		ss.h,
+		ss.f,
 		prozacchiwawa$elm_keccak$Keccak$twentyFive);
 	return _Utils_update(
 		ss,
-		{h: sd});
+		{f: sd});
 };
 var prozacchiwawa$elm_keccak$Keccak$keccakF1600_StatePermute = function (state) {
 	var res = A3(
@@ -7582,7 +7632,7 @@ var prozacchiwawa$elm_keccak$Keccak$keccakF1600_StatePermute = function (state) 
 		},
 		prozacchiwawa$elm_keccak$Keccak$initRound(state),
 		prozacchiwawa$elm_keccak$Keccak$twentyThree);
-	return res.h;
+	return res.f;
 };
 var prozacchiwawa$elm_keccak$Keccak$bytesPerElement = (prozacchiwawa$elm_keccak$Keccak$bitsPerElement / 8) | 0;
 var prozacchiwawa$elm_keccak$Keccak$retrieveOutputByte = F2(
@@ -7687,49 +7737,113 @@ var prozacchiwawa$elm_keccak$Keccak$keccak = F6(
 var prozacchiwawa$elm_keccak$Keccak$fips202_sha3_512 = function (input) {
 	return A6(prozacchiwawa$elm_keccak$Keccak$keccak, 576, 1024, input, 6, _List_Nil, 64);
 };
-var author$project$Shared$Password$hash = function (password) {
+var author$project$Shared$Password$hash = function (_n0) {
+	var p = _n0;
 	return author$project$Shared$Password$listToHex(
 		prozacchiwawa$elm_keccak$Keccak$fips202_sha3_512(
-			author$project$Shared$Password$stringToList(password)));
+			author$project$Shared$Password$stringToList(p)));
 };
-var author$project$Client$Main$toAuth = function (_n0) {
-	var name = _n0.f;
-	var password = _n0.v;
+var author$project$Client$User$formToAuth = function (_n0) {
+	var name = _n0.n;
+	var password = _n0.R;
 	return {
-		z: author$project$Shared$Password$hash(password),
-		f: name
+		n: name,
+		R: author$project$Shared$Password$hash(password)
 	};
 };
-var author$project$Client$Main$getUncheckedAuth = function (model) {
-	var _n0 = model.e;
-	switch (_n0.$) {
-		case 0:
-			var form = _n0.b;
-			return elm$core$Maybe$Just(
-				author$project$Client$Main$toAuth(form));
-		case 1:
-			var form = _n0.b;
-			return elm$core$Maybe$Just(
-				author$project$Client$Main$toAuth(form));
-		case 2:
-			var form = _n0.c;
-			return elm$core$Maybe$Just(
-				author$project$Client$Main$toAuth(form));
-		case 3:
-			var form = _n0.c;
-			return elm$core$Maybe$Just(
-				author$project$Client$Main$toAuth(form));
-		case 4:
-			var form = _n0.b;
-			return elm$core$Maybe$Just(
-				author$project$Client$Main$toAuth(form));
-		case 5:
-			var form = _n0.c;
-			return elm$core$Maybe$Just(
-				author$project$Client$Main$toAuth(form));
-		default:
-			return elm$core$Maybe$Nothing;
-	}
+var author$project$Client$User$getFrom = F3(
+	function (fnLoggedOff, fnLoggedIn, user) {
+		switch (user.$) {
+			case 0:
+				var world = user.a;
+				var form = user.b;
+				return A2(fnLoggedOff, world, form);
+			case 1:
+				var world = user.a;
+				var form = user.b;
+				return A2(fnLoggedOff, world, form);
+			case 2:
+				var world = user.b;
+				var form = user.c;
+				return A2(fnLoggedOff, world, form);
+			case 3:
+				var world = user.b;
+				var form = user.c;
+				return A2(fnLoggedOff, world, form);
+			case 4:
+				var world = user.a;
+				var form = user.b;
+				return A2(fnLoggedOff, world, form);
+			case 5:
+				var world = user.b;
+				var form = user.c;
+				return A2(fnLoggedOff, world, form);
+			default:
+				var loggedInUser = user.a;
+				return fnLoggedIn(loggedInUser);
+		}
+	});
+var author$project$Client$User$getFromLoggedOff = F3(
+	function (fn, _default, user) {
+		return A3(
+			author$project$Client$User$getFrom,
+			fn,
+			function (_n0) {
+				return _default;
+			},
+			user);
+	});
+var author$project$Client$User$getForm = function (user) {
+	return A3(
+		author$project$Client$User$getFromLoggedOff,
+		F2(
+			function (_n0, form) {
+				return elm$core$Maybe$Just(form);
+			}),
+		elm$core$Maybe$Nothing,
+		user);
+};
+var author$project$Client$User$getAuthFromForm = function (user) {
+	return A2(
+		elm$core$Maybe$map,
+		author$project$Client$User$formToAuth,
+		author$project$Client$User$getForm(user));
+};
+var author$project$Client$Main$getAuthFromForm = function (model) {
+	return author$project$Client$User$getAuthFromForm(model.y);
+};
+var author$project$Client$User$getFromLoggedIn = F3(
+	function (fn, _default, user) {
+		return A3(
+			author$project$Client$User$getFrom,
+			F2(
+				function (_n0, _n1) {
+					return _default;
+				}),
+			fn,
+			user);
+	});
+var author$project$Client$User$getLoggedInUser = function (user) {
+	return A3(
+		author$project$Client$User$getFromLoggedIn,
+		function (loggedInUser) {
+			return elm$core$Maybe$Just(loggedInUser);
+		},
+		elm$core$Maybe$Nothing,
+		user);
+};
+var author$project$Client$User$getAuthFromUser = function (user) {
+	return A2(
+		elm$core$Maybe$map,
+		function (_n0) {
+			var name = _n0.n;
+			var password = _n0.R;
+			return {n: name, R: password};
+		},
+		author$project$Client$User$getLoggedInUser(user));
+};
+var author$project$Client$Main$getAuthFromUser = function (model) {
+	return author$project$Client$User$getAuthFromUser(model.y);
 };
 var krisajenkins$remotedata$RemoteData$Loading = {$: 1};
 var krisajenkins$remotedata$RemoteData$map = F2(
@@ -7759,9 +7873,9 @@ var krisajenkins$remotedata$RemoteData$withDefault = F2(
 	});
 var author$project$Client$Main$handleResponse = F2(
 	function (_n0, response) {
-		var ok = _n0.ao;
-		var err = _n0.ak;
-		var _default = _n0.aj;
+		var ok = _n0.an;
+		var err = _n0.aj;
+		var _default = _n0.ai;
 		return A2(
 			krisajenkins$remotedata$RemoteData$withDefault,
 			_default,
@@ -7778,321 +7892,191 @@ var author$project$Client$Main$handleResponse = F2(
 				},
 				response));
 	});
-var author$project$Shared$Player$toOther = function (player) {
-	return {Q: player.Q, f: player.f, _: player._};
-};
-var author$project$Shared$World$clientToAnonymous = function (_n0) {
-	var player = _n0.aU;
-	var otherPlayers = _n0.by;
-	return {
-		bz: A2(
-			elm$core$List$cons,
-			author$project$Shared$Player$toOther(player),
-			otherPlayers)
-	};
-};
-var author$project$Client$Main$logoutUser = function (model) {
-	return _Utils_update(
-		model,
-		{
-			e: function () {
-				var _n0 = model.e;
-				switch (_n0.$) {
-					case 0:
-						return model.e;
-					case 1:
-						var world = _n0.a;
-						var credentialsForm = _n0.b;
-						return A2(author$project$Client$Main$Anonymous, world, credentialsForm);
-					case 2:
-						var world = _n0.b;
-						var credentialsForm = _n0.c;
-						return A2(author$project$Client$Main$Anonymous, world, credentialsForm);
-					case 3:
-						var world = _n0.b;
-						var credentialsForm = _n0.c;
-						return A2(author$project$Client$Main$Anonymous, world, credentialsForm);
-					case 4:
-						var world = _n0.a;
-						var credentialsForm = _n0.b;
-						return A2(author$project$Client$Main$Anonymous, world, credentialsForm);
-					case 5:
-						var world = _n0.b;
-						var credentialsForm = _n0.c;
-						return A2(author$project$Client$Main$Anonymous, world, credentialsForm);
-					default:
-						var name = _n0.a.f;
-						var world = _n0.a.m;
-						return A2(
-							author$project$Client$Main$Anonymous,
-							A2(krisajenkins$remotedata$RemoteData$map, author$project$Shared$World$clientToAnonymous, world),
-							{f: name, v: ''});
-				}
-			}()
-		});
-};
-var author$project$Client$Main$LoggingIn = F2(
-	function (a, b) {
-		return {$: 4, a: a, b: b};
+var author$project$Client$User$mapLoggedOff = F2(
+	function (fn, user) {
+		return A3(author$project$Client$User$map, fn, elm$core$Basics$identity, user);
 	});
-var author$project$Client$Main$SigningUp = F2(
-	function (a, b) {
-		return {$: 1, a: a, b: b};
-	});
-var author$project$Client$Main$mapAnonymousWorld = F2(
-	function (fn, model) {
-		return _Utils_update(
-			model,
-			{
-				e: function () {
-					var _n0 = model.e;
-					switch (_n0.$) {
-						case 0:
-							var world = _n0.a;
-							var form = _n0.b;
-							return A2(
-								author$project$Client$Main$Anonymous,
-								fn(world),
-								form);
-						case 1:
-							var world = _n0.a;
-							var form = _n0.b;
-							return A2(
-								author$project$Client$Main$SigningUp,
-								fn(world),
-								form);
-						case 2:
-							var error = _n0.a;
-							var world = _n0.b;
-							var form = _n0.c;
-							return A3(
-								author$project$Client$Main$SigningUpError,
-								error,
-								fn(world),
-								form);
-						case 3:
-							var error = _n0.a;
-							var world = _n0.b;
-							var form = _n0.c;
-							return A3(
-								author$project$Client$Main$UnknownError,
-								error,
-								fn(world),
-								form);
-						case 4:
-							var world = _n0.a;
-							var form = _n0.b;
-							return A2(
-								author$project$Client$Main$LoggingIn,
-								fn(world),
-								form);
-						case 5:
-							var error = _n0.a;
-							var world = _n0.b;
-							var form = _n0.c;
-							return A3(
-								author$project$Client$Main$LoggingInError,
-								error,
-								fn(world),
-								form);
-						default:
-							var loggedInUser = _n0.a;
-							return model.e;
-					}
-				}()
-			});
-	});
-var author$project$Client$Main$mapCredentialsForm = F2(
-	function (fn, model) {
-		return _Utils_update(
-			model,
-			{
-				e: function () {
-					var _n0 = model.e;
-					switch (_n0.$) {
-						case 0:
-							var world = _n0.a;
-							var credentialsForm = _n0.b;
-							return A2(
-								author$project$Client$Main$Anonymous,
-								world,
-								fn(credentialsForm));
-						case 1:
-							var world = _n0.a;
-							var credentialsForm = _n0.b;
-							return A2(
-								author$project$Client$Main$SigningUp,
-								world,
-								fn(credentialsForm));
-						case 2:
-							var error = _n0.a;
-							var world = _n0.b;
-							var credentialsForm = _n0.c;
-							return A3(
-								author$project$Client$Main$SigningUpError,
-								error,
-								world,
-								fn(credentialsForm));
-						case 3:
-							var error = _n0.a;
-							var world = _n0.b;
-							var credentialsForm = _n0.c;
-							return A3(
-								author$project$Client$Main$UnknownError,
-								error,
-								world,
-								fn(credentialsForm));
-						case 4:
-							var world = _n0.a;
-							var credentialsForm = _n0.b;
-							return A2(
-								author$project$Client$Main$LoggingIn,
-								world,
-								fn(credentialsForm));
-						case 5:
-							var error = _n0.a;
-							var world = _n0.b;
-							var credentialsForm = _n0.c;
-							return A3(
-								author$project$Client$Main$LoggingInError,
-								error,
-								world,
-								fn(credentialsForm));
-						default:
-							return model.e;
-					}
-				}()
-			});
+var author$project$Client$User$mapForm = F2(
+	function (fn, user) {
+		return A2(
+			author$project$Client$User$mapLoggedOff,
+			function (_n0) {
+				var world = _n0.a;
+				var form = _n0.b;
+				return _Utils_Tuple2(
+					world,
+					fn(form));
+			},
+			user);
 	});
 var author$project$Client$Main$setName = F2(
 	function (name, model) {
 		return A2(
-			author$project$Client$Main$mapCredentialsForm,
-			function (form) {
-				return _Utils_update(
-					form,
-					{f: name});
-			},
+			author$project$Client$Main$updateUser,
+			author$project$Client$User$mapForm(
+				function (form) {
+					return _Utils_update(
+						form,
+						{n: name});
+				}),
 			model);
 	});
 var author$project$Client$Main$setPassword = F2(
 	function (password, model) {
 		return A2(
-			author$project$Client$Main$mapCredentialsForm,
-			function (form) {
-				return _Utils_update(
-					form,
-					{v: password});
-			},
+			author$project$Client$Main$updateUser,
+			author$project$Client$User$mapForm(
+				function (form) {
+					return _Utils_update(
+						form,
+						{R: password});
+				}),
 			model);
 	});
 var author$project$Client$Main$setWorldAsLoading = function (model) {
 	return A2(
-		author$project$Client$Main$mapLoggedInUser,
-		function (user) {
-			return _Utils_update(
-				user,
-				{m: krisajenkins$remotedata$RemoteData$Loading});
-		},
+		author$project$Client$Main$updateUser,
+		author$project$Client$User$mapLoggedInUser(
+			function (user) {
+				return _Utils_update(
+					user,
+					{p: krisajenkins$remotedata$RemoteData$Loading});
+			}),
 		model);
 };
-var author$project$Client$Main$transitionUser = F2(
-	function (fn, model) {
-		return _Utils_update(
-			model,
-			{
-				e: function () {
-					var _n0 = model.e;
-					switch (_n0.$) {
-						case 0:
-							var world = _n0.a;
-							var credentialsForm = _n0.b;
-							return A2(fn, world, credentialsForm);
-						case 1:
-							var world = _n0.a;
-							var credentialsForm = _n0.b;
-							return A2(fn, world, credentialsForm);
-						case 2:
-							var world = _n0.b;
-							var credentialsForm = _n0.c;
-							return A2(fn, world, credentialsForm);
-						case 3:
-							var world = _n0.b;
-							var credentialsForm = _n0.c;
-							return A2(fn, world, credentialsForm);
-						case 4:
-							var world = _n0.a;
-							var credentialsForm = _n0.b;
-							return A2(fn, world, credentialsForm);
-						case 5:
-							var world = _n0.b;
-							var credentialsForm = _n0.c;
-							return A2(fn, world, credentialsForm);
-						default:
-							return model.e;
-					}
-				}()
-			});
+var author$project$Client$User$mapLoggedOffWorld = F2(
+	function (fn, user) {
+		return A2(
+			author$project$Client$User$mapLoggedOff,
+			function (_n0) {
+				var world = _n0.a;
+				var form = _n0.b;
+				return _Utils_Tuple2(
+					fn(world),
+					form);
+			},
+			user);
 	});
 var author$project$Client$Main$updateAnonymousWorld = F2(
 	function (_n0, model) {
-		var world = _n0.m;
+		var world = _n0.p;
 		return A2(
-			author$project$Client$Main$mapAnonymousWorld,
-			function (_n1) {
-				return krisajenkins$remotedata$RemoteData$Success(world);
-			},
+			author$project$Client$Main$updateUser,
+			author$project$Client$User$mapLoggedOffWorld(
+				function (_n1) {
+					return krisajenkins$remotedata$RemoteData$Success(world);
+				}),
 			model);
 	});
 var author$project$Client$Main$updateMessages = F2(
 	function (_n0, model) {
-		var messageQueue = _n0.am;
+		var messageQueue = _n0.al;
 		return A2(
-			author$project$Client$Main$mapLoggedInUser,
-			function (user) {
-				return _Utils_update(
-					user,
-					{
-						q: _Utils_ap(user.q, messageQueue)
-					});
-			},
+			author$project$Client$Main$updateUser,
+			author$project$Client$User$mapLoggedInUser(
+				function (user) {
+					return _Utils_update(
+						user,
+						{
+							D: _Utils_ap(user.D, messageQueue)
+						});
+				}),
 			model);
 	});
 var author$project$Client$Main$updateWorld = F2(
 	function (_n0, model) {
-		var world = _n0.m;
+		var world = _n0.p;
 		return A2(
-			author$project$Client$Main$mapLoggedInUser,
-			function (user) {
-				return _Utils_update(
-					user,
-					{
-						m: krisajenkins$remotedata$RemoteData$Success(world)
-					});
-			},
+			author$project$Client$Main$updateUser,
+			author$project$Client$User$mapLoggedInUser(
+				function (user) {
+					return _Utils_update(
+						user,
+						{
+							p: krisajenkins$remotedata$RemoteData$Success(world)
+						});
+				}),
 			model);
+	});
+var author$project$Client$User$loggedIn = F4(
+	function (name, password, world, messageQueue) {
+		return author$project$Client$User$LoggedIn(
+			{
+				D: messageQueue,
+				n: name,
+				R: author$project$Shared$Password$hash(password),
+				p: krisajenkins$remotedata$RemoteData$Success(world)
+			});
+	});
+var author$project$Client$User$loggingInError = F3(
+	function (error, world, form) {
+		return A3(author$project$Client$User$LoggingInError, error, world, form);
+	});
+var author$project$Shared$Player$toOther = function (_n0) {
+	var hp = _n0.O;
+	var xp = _n0.Z;
+	var name = _n0.n;
+	return {O: hp, n: name, Z: xp};
+};
+var author$project$Shared$World$clientToAnonymous = function (_n0) {
+	var player = _n0.aT;
+	var otherPlayers = _n0.bx;
+	return {
+		by: A2(
+			elm$core$List$cons,
+			author$project$Shared$Player$toOther(player),
+			otherPlayers)
+	};
+};
+var author$project$Client$User$logout = function (user) {
+	return A3(
+		author$project$Client$User$getFrom,
+		F2(
+			function (world, form) {
+				return A2(author$project$Client$User$Anonymous, world, form);
+			}),
+		function (_n0) {
+			var world = _n0.p;
+			return A2(
+				author$project$Client$User$Anonymous,
+				A2(krisajenkins$remotedata$RemoteData$map, author$project$Shared$World$clientToAnonymous, world),
+				author$project$Client$User$emptyForm);
+		},
+		user);
+};
+var author$project$Client$User$signingUpError = F3(
+	function (error, world, form) {
+		return A3(author$project$Client$User$SigningUpError, error, world, form);
+	});
+var author$project$Client$User$transitionFromLoggedOff = F2(
+	function (fn, user) {
+		return A3(author$project$Client$User$getFromLoggedOff, fn, user, user);
+	});
+var author$project$Client$User$unknownError = F3(
+	function (error, world, form) {
+		return A3(author$project$Client$User$UnknownError, error, world, form);
 	});
 var author$project$Extra$Http$errorToString = function (error) {
 	switch (error.$) {
 		case 0:
 			var url = error.a;
-			return 'Bad URL: ' + url;
+			return 'Bad URL address: ' + url;
 		case 1:
-			return 'Request Timeout';
+			return 'HTTP Request Timeout';
 		case 2:
 			return 'Network Error';
 		case 3:
-			return 'Bad Status';
+			return 'Bad HTTP Status';
 		default:
 			var jsonError = error.a;
-			return 'Bad Payload: ' + jsonError;
+			return 'Bad HTTP Payload: ' + jsonError;
 	}
 };
 var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var author$project$Client$Main$update = F2(
 	function (msg, model) {
-		var serverEndpoint = model.J;
+		var serverEndpoint = model.H;
 		switch (msg.$) {
 			case 0:
 				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
@@ -8112,7 +8096,10 @@ var author$project$Client$Main$update = F2(
 			case 11:
 				var password = msg.a;
 				return _Utils_Tuple2(
-					A2(author$project$Client$Main$setPassword, password, model),
+					A2(
+						author$project$Client$Main$setPassword,
+						author$project$Shared$Password$password(password),
+						model),
 					elm$core$Platform$Cmd$none);
 			case 3:
 				switch (msg.a.$) {
@@ -8127,7 +8114,7 @@ var author$project$Client$Main$update = F2(
 								author$project$Client$Main$sendRequest,
 								serverEndpoint,
 								route,
-								author$project$Client$Main$getUncheckedAuth(model)));
+								author$project$Client$Main$getAuthFromForm(model)));
 					case 2:
 						var route = msg.a;
 						return _Utils_Tuple2(
@@ -8136,15 +8123,16 @@ var author$project$Client$Main$update = F2(
 								author$project$Client$Main$sendRequest,
 								serverEndpoint,
 								route,
-								author$project$Client$Main$getUncheckedAuth(model)));
+								author$project$Client$Main$getAuthFromForm(model)));
 					case 6:
 						var route = msg.a;
 						return _Utils_Tuple2(
 							A2(
-								author$project$Client$Main$mapAnonymousWorld,
-								function (_n2) {
-									return krisajenkins$remotedata$RemoteData$Loading;
-								},
+								author$project$Client$Main$updateUser,
+								author$project$Client$User$mapLoggedOffWorld(
+									function (_n2) {
+										return krisajenkins$remotedata$RemoteData$Loading;
+									}),
 								model),
 							A3(author$project$Client$Main$sendRequest, serverEndpoint, route, elm$core$Maybe$Nothing));
 					case 5:
@@ -8155,7 +8143,7 @@ var author$project$Client$Main$update = F2(
 								author$project$Client$Main$sendRequest,
 								serverEndpoint,
 								route,
-								author$project$Client$Main$getAuth(model)));
+								author$project$Client$Main$getAuthFromUser(model)));
 					case 3:
 						var route = msg.a;
 						return _Utils_Tuple2(
@@ -8164,15 +8152,16 @@ var author$project$Client$Main$update = F2(
 								author$project$Client$Main$sendRequest,
 								serverEndpoint,
 								route,
-								author$project$Client$Main$getAuth(model)));
+								author$project$Client$Main$getAuthFromUser(model)));
 					default:
 						var route = msg.a;
 						return _Utils_Tuple2(
 							A2(
-								author$project$Client$Main$mapAnonymousWorld,
-								function (_n3) {
-									return krisajenkins$remotedata$RemoteData$Loading;
-								},
+								author$project$Client$Main$updateUser,
+								author$project$Client$User$mapLoggedOffWorld(
+									function (_n3) {
+										return krisajenkins$remotedata$RemoteData$Loading;
+									}),
 								model),
 							A3(author$project$Client$Main$sendRequest, serverEndpoint, route, elm$core$Maybe$Nothing));
 				}
@@ -8184,46 +8173,45 @@ var author$project$Client$Main$update = F2(
 							case 3:
 								var response_ = response.a;
 								if (!response_.$) {
-									var world = response_.a.m;
-									var messageQueue = response_.a.am;
+									var world = response_.a.p;
+									var messageQueue = response_.a.al;
 									return A2(
-										author$project$Client$Main$transitionUser,
-										F2(
-											function (_n6, _n7) {
-												var name = _n7.f;
-												var password = _n7.v;
-												return author$project$Client$Main$LoggedIn(
-													{
-														z: author$project$Shared$Password$hash(password),
-														q: messageQueue,
-														f: name,
-														m: krisajenkins$remotedata$RemoteData$Success(world)
-													});
-											}),
+										author$project$Client$Main$updateUser,
+										author$project$Client$User$transitionFromLoggedOff(
+											F2(
+												function (_n6, _n7) {
+													var name = _n7.n;
+													var password = _n7.R;
+													return A4(author$project$Client$User$loggedIn, name, password, world, messageQueue);
+												})),
 										model);
 								} else {
 									var signupError = response_.a;
 									return A2(
-										author$project$Client$Main$transitionUser,
-										author$project$Client$Main$SigningUpError(signupError),
+										author$project$Client$Main$updateUser,
+										author$project$Client$User$transitionFromLoggedOff(
+											author$project$Client$User$signingUpError(signupError)),
 										model);
 								}
 							case 2:
 								var error = response.a;
 								return A2(
-									author$project$Client$Main$transitionUser,
-									author$project$Client$Main$UnknownError(
-										author$project$Extra$Http$errorToString(error)),
+									author$project$Client$Main$updateUser,
+									author$project$Client$User$transitionFromLoggedOff(
+										author$project$Client$User$unknownError(
+											author$project$Extra$Http$errorToString(error))),
 									model);
 							case 0:
 								return A2(
-									author$project$Client$Main$transitionUser,
-									author$project$Client$Main$UnknownError('Internal error: Signup got into NotAsked state'),
+									author$project$Client$Main$updateUser,
+									author$project$Client$User$transitionFromLoggedOff(
+										author$project$Client$User$unknownError('Internal error: Signup got into NotAsked state')),
 									model);
 							default:
 								return A2(
-									author$project$Client$Main$transitionUser,
-									author$project$Client$Main$UnknownError('Internal error: Signup got into Loading state'),
+									author$project$Client$Main$updateUser,
+									author$project$Client$User$transitionFromLoggedOff(
+										author$project$Client$User$unknownError('Internal error: Signup got into Loading state')),
 									model);
 						}
 					}(),
@@ -8236,46 +8224,45 @@ var author$project$Client$Main$update = F2(
 							case 3:
 								var response_ = response.a;
 								if (!response_.$) {
-									var world = response_.a.m;
-									var messageQueue = response_.a.am;
+									var world = response_.a.p;
+									var messageQueue = response_.a.al;
 									return A2(
-										author$project$Client$Main$transitionUser,
-										F2(
-											function (_n10, _n11) {
-												var name = _n11.f;
-												var password = _n11.v;
-												return author$project$Client$Main$LoggedIn(
-													{
-														z: author$project$Shared$Password$hash(password),
-														q: messageQueue,
-														f: name,
-														m: krisajenkins$remotedata$RemoteData$Success(world)
-													});
-											}),
+										author$project$Client$Main$updateUser,
+										author$project$Client$User$transitionFromLoggedOff(
+											F2(
+												function (_n10, _n11) {
+													var name = _n11.n;
+													var password = _n11.R;
+													return A4(author$project$Client$User$loggedIn, name, password, world, messageQueue);
+												})),
 										model);
 								} else {
 									var authError = response_.a;
 									return A2(
-										author$project$Client$Main$transitionUser,
-										author$project$Client$Main$LoggingInError(authError),
+										author$project$Client$Main$updateUser,
+										author$project$Client$User$transitionFromLoggedOff(
+											author$project$Client$User$loggingInError(authError)),
 										model);
 								}
 							case 2:
 								var error = response.a;
 								return A2(
-									author$project$Client$Main$transitionUser,
-									author$project$Client$Main$UnknownError(
-										author$project$Extra$Http$errorToString(error)),
+									author$project$Client$Main$updateUser,
+									author$project$Client$User$transitionFromLoggedOff(
+										author$project$Client$User$unknownError(
+											author$project$Extra$Http$errorToString(error))),
 									model);
 							case 0:
 								return A2(
-									author$project$Client$Main$transitionUser,
-									author$project$Client$Main$UnknownError('Internal error: Login got into NotAsked state'),
+									author$project$Client$Main$updateUser,
+									author$project$Client$User$transitionFromLoggedOff(
+										author$project$Client$User$unknownError('Internal error: Login got into NotAsked state')),
 									model);
 							default:
 								return A2(
-									author$project$Client$Main$transitionUser,
-									author$project$Client$Main$UnknownError('Internal error: Login got into Loading state'),
+									author$project$Client$Main$updateUser,
+									author$project$Client$User$transitionFromLoggedOff(
+										author$project$Client$User$unknownError('Internal error: Login got into Loading state')),
 									model);
 						}
 					}(),
@@ -8286,11 +8273,11 @@ var author$project$Client$Main$update = F2(
 					A2(
 						author$project$Client$Main$handleResponse,
 						{
-							aj: model,
-							ak: function (_n12) {
+							ai: model,
+							aj: function (_n12) {
 								return model;
 							},
-							ao: function (response_) {
+							an: function (response_) {
 								return A2(
 									author$project$Client$Main$updateMessages,
 									response_,
@@ -8305,11 +8292,11 @@ var author$project$Client$Main$update = F2(
 					A2(
 						author$project$Client$Main$handleResponse,
 						{
-							aj: model,
-							ak: function (_n13) {
+							ai: model,
+							aj: function (_n13) {
 								return model;
 							},
-							ao: function (response_) {
+							an: function (response_) {
 								return A2(
 									author$project$Client$Main$updateMessages,
 									response_,
@@ -8328,7 +8315,7 @@ var author$project$Client$Main$update = F2(
 								return A2(
 									author$project$Client$Main$updateAnonymousWorld,
 									response_,
-									author$project$Client$Main$logoutUser(model));
+									A2(author$project$Client$Main$updateUser, author$project$Client$User$logout, model));
 							case 2:
 								var err = response.a;
 								return model;
@@ -8343,15 +8330,16 @@ var author$project$Client$Main$update = F2(
 				var response = msg.a;
 				return _Utils_Tuple2(
 					A2(
-						author$project$Client$Main$mapAnonymousWorld,
-						function (_n15) {
-							return A2(
-								krisajenkins$remotedata$RemoteData$map,
-								function ($) {
-									return $.m;
-								},
-								response);
-						},
+						author$project$Client$Main$updateUser,
+						author$project$Client$User$mapLoggedOffWorld(
+							function (_n15) {
+								return A2(
+									krisajenkins$remotedata$RemoteData$map,
+									function ($) {
+										return $.p;
+									},
+									response);
+							}),
 						model),
 					elm$core$Platform$Cmd$none);
 		}
@@ -8428,9 +8416,9 @@ var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
 var elm$html$Html$tr = _VirtualDom_node('tr');
 var author$project$Client$Main$viewOtherPlayerAnonymous = function (_n0) {
-	var name = _n0.f;
-	var hp = _n0.Q;
-	var xp = _n0._;
+	var name = _n0.n;
+	var hp = _n0.O;
+	var xp = _n0.Z;
 	return A2(
 		elm$html$Html$tr,
 		_List_Nil,
@@ -8474,7 +8462,7 @@ var elm$html$Html$strong = _VirtualDom_node('strong');
 var elm$html$Html$table = _VirtualDom_node('table');
 var elm$html$Html$th = _VirtualDom_node('th');
 var author$project$Client$Main$viewPlayers = function (_n0) {
-	var players = _n0.bz;
+	var players = _n0.by;
 	return A2(
 		elm$html$Html$div,
 		_List_Nil,
@@ -8573,6 +8561,10 @@ var author$project$Client$Main$onClickRequest = function (route) {
 	return elm$html$Html$Events$onClick(
 		author$project$Client$Main$Request(route));
 };
+var author$project$Shared$Password$unwrapPlaintext = function (_n0) {
+	var p = _n0;
+	return p;
+};
 var elm$core$Basics$not = _Basics_not;
 var elm$core$List$maybeCons = F3(
 	function (f, mx, xs) {
@@ -8649,16 +8641,17 @@ var elm$html$Html$Events$onInput = function (tagger) {
 			A2(elm$json$Json$Decode$map, tagger, elm$html$Html$Events$targetValue)));
 };
 var author$project$Client$Main$viewCredentialsForm = F2(
-	function (form, maybeMessage) {
-		var name = form.f;
-		var password = form.v;
+	function (_n0, maybeMessage) {
+		var name = _n0.n;
+		var password = _n0.R;
 		var unmetRules = A2(
 			elm$core$List$filterMap,
 			elm$core$Basics$identity,
 			_List_fromArray(
 				[
 					elm$core$String$isEmpty(name) ? elm$core$Maybe$Just('Name must not be empty') : elm$core$Maybe$Nothing,
-					(elm$core$String$length(password) < 5) ? elm$core$Maybe$Just('Password must be 5 or more characters long') : elm$core$Maybe$Nothing
+					(elm$core$String$length(
+					author$project$Shared$Password$unwrapPlaintext(password)) < 5) ? elm$core$Maybe$Just('Password must be 5 or more characters long') : elm$core$Maybe$Nothing
 				]));
 		var hasUnmetRules = !elm$core$List$isEmpty(unmetRules);
 		var button = F2(
@@ -8698,7 +8691,8 @@ var author$project$Client$Main$viewCredentialsForm = F2(
 					_List_fromArray(
 						[
 							elm$html$Html$Events$onInput(author$project$Client$Main$SetPassword),
-							elm$html$Html$Attributes$value(password),
+							elm$html$Html$Attributes$value(
+							author$project$Shared$Password$unwrapPlaintext(password)),
 							elm$html$Html$Attributes$type_('password'),
 							elm$html$Html$Attributes$placeholder('Password')
 						]),
@@ -8723,10 +8717,10 @@ var author$project$Client$Main$viewCredentialsForm = F2(
 				]));
 	});
 var author$project$Client$Main$viewAnonymous = F3(
-	function (world, credentialsForm, maybeMessage) {
+	function (world, form, maybeMessage) {
 		return _List_fromArray(
 			[
-				A2(author$project$Client$Main$viewCredentialsForm, credentialsForm, maybeMessage),
+				A2(author$project$Client$Main$viewCredentialsForm, form, maybeMessage),
 				author$project$Client$Main$viewAnonymousWorld(world)
 			]);
 	});
@@ -8808,7 +8802,7 @@ var author$project$Client$Main$viewOtherPlayer = F2(
 					_List_Nil,
 					_List_fromArray(
 						[
-							elm$html$Html$text(otherPlayer.f)
+							elm$html$Html$text(otherPlayer.n)
 						])),
 					A2(
 					elm$html$Html$td,
@@ -8816,7 +8810,7 @@ var author$project$Client$Main$viewOtherPlayer = F2(
 					_List_fromArray(
 						[
 							elm$html$Html$text(
-							elm$core$String$fromInt(otherPlayer.Q))
+							elm$core$String$fromInt(otherPlayer.O))
 						])),
 					A2(
 					elm$html$Html$td,
@@ -8825,7 +8819,7 @@ var author$project$Client$Main$viewOtherPlayer = F2(
 						[
 							elm$html$Html$text(
 							elm$core$String$fromInt(
-								author$project$Shared$Level$levelForXp(otherPlayer._)))
+								author$project$Shared$Level$levelForXp(otherPlayer.Z)))
 						])),
 					A2(
 					elm$html$Html$td,
@@ -8836,8 +8830,8 @@ var author$project$Client$Main$viewOtherPlayer = F2(
 							elm$html$Html$button,
 							_List_fromArray(
 								[
-									((player.Q > 0) && (otherPlayer.Q > 0)) ? author$project$Client$Main$onClickRequest(
-									author$project$Server$Route$Attack(otherPlayer.f)) : elm$html$Html$Attributes$disabled(true)
+									((player.O > 0) && (otherPlayer.O > 0)) ? author$project$Client$Main$onClickRequest(
+									author$project$Server$Route$Attack(otherPlayer.n)) : elm$html$Html$Attributes$disabled(true)
 								]),
 							_List_fromArray(
 								[
@@ -8847,8 +8841,8 @@ var author$project$Client$Main$viewOtherPlayer = F2(
 				]));
 	});
 var author$project$Client$Main$viewOtherPlayers = function (_n0) {
-	var player = _n0.aU;
-	var otherPlayers = _n0.by;
+	var player = _n0.aT;
+	var otherPlayers = _n0.bx;
 	return A2(
 		elm$html$Html$div,
 		_List_Nil,
@@ -8949,7 +8943,7 @@ var author$project$Client$Main$viewPlayer = function (player) {
 						_List_Nil,
 						_List_fromArray(
 							[
-								elm$html$Html$text(player.f)
+								elm$html$Html$text(player.n)
 							]))
 					])),
 				A2(
@@ -8970,7 +8964,7 @@ var author$project$Client$Main$viewPlayer = function (player) {
 						_List_fromArray(
 							[
 								elm$html$Html$text(
-								elm$core$String$fromInt(player.Q) + ('/' + elm$core$String$fromInt(player.bt)))
+								elm$core$String$fromInt(player.O) + ('/' + elm$core$String$fromInt(player.bs)))
 							]))
 					])),
 				A2(
@@ -8992,8 +8986,8 @@ var author$project$Client$Main$viewPlayer = function (player) {
 							[
 								elm$html$Html$text(
 								elm$core$String$fromInt(
-									author$project$Shared$Level$levelForXp(player._)) + (' (' + (elm$core$String$fromInt(player._) + (' XP, ' + (elm$core$String$fromInt(
-									author$project$Shared$Level$xpToNextLevel(player._)) + ' till the next level)')))))
+									author$project$Shared$Level$levelForXp(player.Z)) + (' (' + (elm$core$String$fromInt(player.Z) + (' XP, ' + (elm$core$String$fromInt(
+									author$project$Shared$Level$xpToNextLevel(player.Z)) + ' till the next level)')))))
 							]))
 					]))
 			]));
@@ -9014,7 +9008,7 @@ var author$project$Client$Main$viewWorld = function (world) {
 				_List_Nil,
 				_List_fromArray(
 					[
-						author$project$Client$Main$viewPlayer(world_.aU),
+						author$project$Client$Main$viewPlayer(world_.aT),
 						author$project$Client$Main$viewOtherPlayers(world_)
 					]));
 	}
@@ -9022,71 +9016,71 @@ var author$project$Client$Main$viewWorld = function (world) {
 var author$project$Client$Main$viewLoggedInUser = function (user) {
 	return _List_fromArray(
 		[
-			author$project$Client$Main$viewMessages(user.q),
-			author$project$Client$Main$viewButtons(user.m),
-			author$project$Client$Main$viewWorld(user.m)
+			author$project$Client$Main$viewMessages(user.D),
+			author$project$Client$Main$viewButtons(user.p),
+			author$project$Client$Main$viewWorld(user.p)
 		]);
 };
 var author$project$Client$Main$view = function (model) {
 	return {
-		ax: function () {
-			var _n0 = model.e;
+		aw: function () {
+			var _n0 = model.y;
 			switch (_n0.$) {
 				case 0:
 					var world = _n0.a;
-					var credentialsForm = _n0.b;
-					return A3(author$project$Client$Main$viewAnonymous, world, credentialsForm, elm$core$Maybe$Nothing);
+					var form = _n0.b;
+					return A3(author$project$Client$Main$viewAnonymous, world, form, elm$core$Maybe$Nothing);
 				case 1:
 					var world = _n0.a;
-					var credentialsForm = _n0.b;
+					var form = _n0.b;
 					return A3(
 						author$project$Client$Main$viewAnonymous,
 						world,
-						credentialsForm,
+						form,
 						elm$core$Maybe$Just('Signing up'));
 				case 2:
 					var error = _n0.a;
 					var world = _n0.b;
-					var credentialsForm = _n0.c;
+					var form = _n0.c;
 					return A3(
 						author$project$Client$Main$viewAnonymous,
 						world,
-						credentialsForm,
+						form,
 						elm$core$Maybe$Just(
-							author$project$Server$Route$handlers.ar.aC(error)));
+							author$project$Server$Route$handlers.aq.aB(error)));
 				case 3:
 					var error = _n0.a;
 					var world = _n0.b;
-					var credentialsForm = _n0.c;
+					var form = _n0.c;
 					return A3(
 						author$project$Client$Main$viewAnonymous,
 						world,
-						credentialsForm,
+						form,
 						elm$core$Maybe$Just(error));
 				case 4:
 					var world = _n0.a;
-					var credentialsForm = _n0.b;
+					var form = _n0.b;
 					return A3(
 						author$project$Client$Main$viewAnonymous,
 						world,
-						credentialsForm,
+						form,
 						elm$core$Maybe$Just('Logging in'));
 				case 5:
 					var error = _n0.a;
 					var world = _n0.b;
-					var credentialsForm = _n0.c;
+					var form = _n0.c;
 					return A3(
 						author$project$Client$Main$viewAnonymous,
 						world,
-						credentialsForm,
+						form,
 						elm$core$Maybe$Just(
-							author$project$Server$Route$handlers.al.aC(error)));
+							author$project$Server$Route$handlers.ak.aB(error)));
 				default:
 					var loggedInUser = _n0.a;
 					return author$project$Client$Main$viewLoggedInUser(loggedInUser);
 			}
 		}(),
-		bG: 'NuAshworld'
+		bF: 'NuAshworld'
 	};
 };
 var elm$browser$Browser$External = function (a) {
@@ -9131,7 +9125,7 @@ var elm$core$String$contains = _String_contains;
 var elm$core$String$toInt = _String_toInt;
 var elm$url$Url$Url = F6(
 	function (protocol, host, port_, path, query, fragment) {
-		return {aH: fragment, aJ: host, aS: path, aV: port_, aZ: protocol, a_: query};
+		return {aG: fragment, aI: host, aR: path, aU: port_, aY: protocol, aZ: query};
 	});
 var elm$url$Url$chompBeforePath = F5(
 	function (protocol, path, params, frag, str) {
@@ -9237,12 +9231,12 @@ var elm$url$Url$fromString = function (str) {
 };
 var elm$browser$Browser$application = _Browser_application;
 var author$project$Client$Main$main = elm$browser$Browser$application(
-	{bq: author$project$Client$Main$init, bv: author$project$Client$Main$UrlChanged, bw: author$project$Client$Main$UrlRequested, bE: author$project$Client$Main$subscriptions, bH: author$project$Client$Main$update, bJ: author$project$Client$Main$view});
+	{bp: author$project$Client$Main$init, bu: author$project$Client$Main$UrlChanged, bv: author$project$Client$Main$UrlRequested, bD: author$project$Client$Main$subscriptions, bG: author$project$Client$Main$update, bI: author$project$Client$Main$view});
 _Platform_export({'Client':{'Main':{'init':author$project$Client$Main$main(
 	A2(
 		elm$json$Json$Decode$andThen,
 		function (serverEndpoint) {
 			return elm$json$Json$Decode$succeed(
-				{J: serverEndpoint});
+				{H: serverEndpoint});
 		},
 		A2(elm$json$Json$Decode$field, 'serverEndpoint', elm$json$Json$Decode$string)))(0)}}});}(this));
