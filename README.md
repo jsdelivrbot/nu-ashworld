@@ -12,6 +12,7 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 > Roughly in the order of "I'd like to do this the most", `DESC`.
 
 - [ ] Randomized fight
+- [ ] Action points, capped, once per ... what, an hour? (ENV flag to make it go faster for debug/testing purposes?)
 - [ ] Timestamps in the messages
 - [ ] Visibility of some "next tick in/at ..." information
 - [ ] Think about putting some "you've healed" msg to players' queues on each Heal tick
