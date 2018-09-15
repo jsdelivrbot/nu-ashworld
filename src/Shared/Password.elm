@@ -1,41 +1,111 @@
 module Shared.Password
     exposing
         ( Auth
+        , Hashed
+        , Password
+        , Plaintext
+        , Verified
         , checksOut
+        , encodeVerified
         , hash
+        , hashedPassword
+        , password
+        , unwrapHashed
+        , unwrapPlaintext
+        , verifiedDecoder
+        , verify
         )
 
 import Bitwise
-import Dict
+import Dict exposing (Dict)
 import Hex
+import Json.Decode as JD exposing (Decoder)
+import Json.Encode as JE
 import Keccak
-import Shared.World exposing (ServerWorld)
 
 
-type alias Auth =
+{-| Wee phantom types
+-}
+type Password a
+    = Password String
+
+
+type Plaintext
+    = Plaintext
+
+
+type Hashed
+    = Hashed
+
+
+{-| All verified passwords are hashed already.
+(The transition to Verified can only be done from Hashed, not Plaintext)
+-}
+type Verified
+    = Verified
+
+
+type alias Auth a =
     { name : String
-    , hashedPassword : String
+    , password : Password a
     }
 
 
-hash : String -> String
-hash password =
-    password
+type alias HasVerifiedAuth a =
+    { a
+        | name : String
+        , password : Password Verified
+    }
+
+
+password : String -> Password Plaintext
+password p =
+    Password p
+
+
+hashedPassword : String -> Password Hashed
+hashedPassword p =
+    Password p
+
+
+hash : Password Plaintext -> Password Hashed
+hash (Password p) =
+    p
         |> stringToList
         |> Keccak.fips202_sha3_512
         |> listToHex
+        |> Password
 
 
-checksOut : Auth -> ServerWorld -> Bool
-checksOut { name, hashedPassword } world =
-    world.players
+verify : Auth Hashed -> Auth Verified
+verify auth =
+    { name = auth.name
+    , password = verifyPassword auth.password
+    }
+
+
+{-| Don't expose this. Only use this in `verify` in this module.
+-}
+verifyPassword : Password Hashed -> Password Verified
+verifyPassword (Password p) =
+    Password p
+
+
+checksOut : Auth Hashed -> Dict String (HasVerifiedAuth a) -> Bool
+checksOut auth players =
+    players
         |> Dict.filter
             (\_ player ->
-                (String.toLower player.name == String.toLower name)
-                    && (player.hashedPassword == hashedPassword)
+                (String.toLower player.name == String.toLower auth.name)
+                    && passwordChecksOut auth.password player.password
             )
         |> Dict.isEmpty
         |> not
+
+
+passwordChecksOut : Password Hashed -> Password Verified -> Bool
+passwordChecksOut (Password attempt) (Password truth) =
+    attempt == truth
 
 
 
@@ -79,3 +149,26 @@ listToHex list =
     list
         |> List.map (Hex.toString >> String.padLeft 2 '0')
         |> String.concat
+
+
+{-| Be VERY careful where you use this. It should only be used in the persistence
+layer, ie. saved password hashes from the database are verified already.
+-}
+verifiedDecoder : Decoder (Password Verified)
+verifiedDecoder =
+    JD.map Password JD.string
+
+
+encodeVerified : Password Verified -> JE.Value
+encodeVerified (Password p) =
+    JE.string p
+
+
+unwrapPlaintext : Password Plaintext -> String
+unwrapPlaintext (Password p) =
+    p
+
+
+unwrapHashed : Password Hashed -> String
+unwrapHashed (Password p) =
+    p
