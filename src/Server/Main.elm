@@ -238,14 +238,22 @@ handleSignup maybeAuth response model =
                         newPlayer =
                             Shared.Player.init name password
 
-                        newModel : Model
-                        newModel =
+                        welcomeMessage : String
+                        welcomeMessage =
+                            "Welcome, " ++ name ++ "! You start out in the pleasant, if boring, town of Klamath."
+
+                        modelWithPlayer : Model
+                        modelWithPlayer =
                             model
                                 |> addPlayer newPlayer
+                                |> updateWorld (Server.World.addPlayerMessage name welcomeMessage)
+
+                        ( messageQueue, newModel ) =
+                            getMessageQueue name modelWithPlayer
                     in
                     ( newModel
                     , sendHttpResponse response
-                        (case Route.handlers.signup.response name newModel.world of
+                        (case Route.handlers.signup.response messageQueue name newModel.world of
                             Ok signupResponse ->
                                 Route.handlers.signup.encode signupResponse
 
@@ -467,12 +475,18 @@ setWorld world model =
     { model | world = world }
 
 
+updateWorld : (ServerWorld -> ServerWorld) -> Model -> Model
+updateWorld fn model =
+    { model | world = fn model.world }
+
+
 addPlayer : ServerPlayer -> Model -> Model
-addPlayer player ({ world } as model) =
-    { model
-        | world =
-            { world | players = world.players |> Dict.insert player.name player }
-    }
+addPlayer player model =
+    model
+        |> updateWorld
+            (\world ->
+                { world | players = Dict.insert player.name player world.players }
+            )
 
 
 healTickTimeout : Float
