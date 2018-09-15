@@ -2,6 +2,7 @@ module Client.Main exposing (main)
 
 import Browser
 import Browser.Navigation
+import Client.User as User exposing (Form, LoggedInUser, User(..))
 import Extra.Http as EH
 import Html as H exposing (Attribute, Html)
 import Html.Attributes as HA
@@ -26,7 +27,7 @@ import Server.Route as Route
 import Shared.Fight exposing (Fight(..))
 import Shared.Level
 import Shared.MessageQueue
-import Shared.Password exposing (Auth)
+import Shared.Password exposing (Auth, Hashed, Password, Plaintext)
 import Shared.Player exposing (ClientOtherPlayer, ClientPlayer)
 import Shared.World exposing (AnonymousClientWorld, ClientWorld)
 import Url exposing (Url)
@@ -41,30 +42,6 @@ type alias Model =
     { navigationKey : Browser.Navigation.Key
     , serverEndpoint : String
     , user : User
-    }
-
-
-type User
-    = Anonymous (WebData AnonymousClientWorld) CredentialsForm
-    | SigningUp (WebData AnonymousClientWorld) CredentialsForm
-    | SigningUpError SignupError (WebData AnonymousClientWorld) CredentialsForm
-    | UnknownError String (WebData AnonymousClientWorld) CredentialsForm
-    | LoggingIn (WebData AnonymousClientWorld) CredentialsForm
-    | LoggingInError AuthError (WebData AnonymousClientWorld) CredentialsForm
-    | LoggedIn LoggedInUser
-
-
-type alias CredentialsForm =
-    { name : String
-    , password : String
-    }
-
-
-type alias LoggedInUser =
-    { name : String
-    , hashedPassword : String
-    , world : WebData ClientWorld
-    , messages : List String
     }
 
 
@@ -99,7 +76,7 @@ init : Flags -> Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
 init { serverEndpoint } url key =
     ( { navigationKey = key
       , serverEndpoint = serverEndpoint
-      , user = Anonymous NotAsked { name = "", password = "" }
+      , user = User.init
       }
     , sendRequest serverEndpoint RefreshAnonymous Nothing
     )
@@ -131,7 +108,7 @@ update msg ({ serverEndpoint } as model) =
 
         SetPassword password ->
             ( model
-                |> setPassword password
+                |> setPassword (Shared.Password.password password)
             , Cmd.none
             )
 
@@ -143,37 +120,37 @@ update msg ({ serverEndpoint } as model) =
         Request (Signup as route) ->
             ( model
                 |> setWorldAsLoading
-            , sendRequest serverEndpoint route (getUncheckedAuth model)
+            , sendRequest serverEndpoint route (getAuthFromForm model)
             )
 
         Request (Login as route) ->
             ( model
                 |> setWorldAsLoading
-            , sendRequest serverEndpoint route (getUncheckedAuth model)
+            , sendRequest serverEndpoint route (getAuthFromForm model)
             )
 
         Request (Logout as route) ->
             ( -- TODO maybe logout on the client side optimistically?
               model
-                |> mapAnonymousWorld (\_ -> Loading)
+                |> updateUser (User.mapLoggedOffWorld (\_ -> Loading))
             , sendRequest serverEndpoint route Nothing
             )
 
         Request ((Attack _) as route) ->
             ( model
                 |> setWorldAsLoading
-            , sendRequest serverEndpoint route (getAuth model)
+            , sendRequest serverEndpoint route (getAuthFromUser model)
             )
 
         Request (Refresh as route) ->
             ( model
                 |> setWorldAsLoading
-            , sendRequest serverEndpoint route (getAuth model)
+            , sendRequest serverEndpoint route (getAuthFromUser model)
             )
 
         Request (RefreshAnonymous as route) ->
             ( model
-                |> mapAnonymousWorld (\_ -> Loading)
+                |> updateUser (User.mapLoggedOffWorld (\_ -> Loading))
             , sendRequest serverEndpoint route Nothing
             )
 
@@ -183,31 +160,28 @@ update msg ({ serverEndpoint } as model) =
                     case response_ of
                         Ok { world, messageQueue } ->
                             model
-                                |> transitionUser
-                                    (\_ { name, password } ->
-                                        LoggedIn
-                                            { name = name
-                                            , hashedPassword = Shared.Password.hash password
-                                            , world = Success world
-                                            , messages = messageQueue
-                                            }
+                                |> updateUser
+                                    (User.transitionFromLoggedOff
+                                        (\_ { name, password } ->
+                                            User.loggedIn name password world messageQueue
+                                        )
                                     )
 
                         Err signupError ->
                             model
-                                |> transitionUser (SigningUpError signupError)
+                                |> updateUser (User.transitionFromLoggedOff (User.signingUpError signupError))
 
                 Failure error ->
                     model
-                        |> transitionUser (UnknownError (EH.errorToString error))
+                        |> updateUser (User.transitionFromLoggedOff (User.unknownError (EH.errorToString error)))
 
                 NotAsked ->
                     model
-                        |> transitionUser (UnknownError "Internal error: Signup got into NotAsked state")
+                        |> updateUser (User.transitionFromLoggedOff (User.unknownError "Internal error: Signup got into NotAsked state"))
 
                 Loading ->
                     model
-                        |> transitionUser (UnknownError "Internal error: Signup got into Loading state")
+                        |> updateUser (User.transitionFromLoggedOff (User.unknownError "Internal error: Signup got into Loading state"))
             , Cmd.none
             )
 
@@ -217,31 +191,28 @@ update msg ({ serverEndpoint } as model) =
                     case response_ of
                         Ok { world, messageQueue } ->
                             model
-                                |> transitionUser
-                                    (\_ { name, password } ->
-                                        LoggedIn
-                                            { name = name
-                                            , hashedPassword = Shared.Password.hash password
-                                            , world = Success world
-                                            , messages = messageQueue
-                                            }
+                                |> updateUser
+                                    (User.transitionFromLoggedOff
+                                        (\_ { name, password } ->
+                                            User.loggedIn name password world messageQueue
+                                        )
                                     )
 
                         Err authError ->
                             model
-                                |> transitionUser (LoggingInError authError)
+                                |> updateUser (User.transitionFromLoggedOff (User.loggingInError authError))
 
                 Failure error ->
                     model
-                        |> transitionUser (UnknownError (EH.errorToString error))
+                        |> updateUser (User.transitionFromLoggedOff (User.unknownError (EH.errorToString error)))
 
                 NotAsked ->
                     model
-                        |> transitionUser (UnknownError "Internal error: Login got into NotAsked state")
+                        |> updateUser (User.transitionFromLoggedOff (User.unknownError "Internal error: Login got into NotAsked state"))
 
                 Loading ->
                     model
-                        |> transitionUser (UnknownError "Internal error: Login got into Loading state")
+                        |> updateUser (User.transitionFromLoggedOff (User.unknownError "Internal error: Login got into Loading state"))
             , Cmd.none
             )
 
@@ -277,7 +248,7 @@ update msg ({ serverEndpoint } as model) =
             ( case response of
                 Success response_ ->
                     model
-                        |> logoutUser
+                        |> updateUser User.logout
                         |> updateAnonymousWorld response_
 
                 Failure err ->
@@ -294,7 +265,7 @@ update msg ({ serverEndpoint } as model) =
 
         GetRefreshAnonymousResponse response ->
             ( model
-                |> mapAnonymousWorld (\_ -> RemoteData.map .world response)
+                |> updateUser (User.mapLoggedOffWorld (\_ -> RemoteData.map .world response))
             , Cmd.none
             )
 
@@ -348,241 +319,63 @@ type alias WithMessageQueue a =
     { a | messageQueue : List String }
 
 
-transitionUser : (WebData AnonymousClientWorld -> CredentialsForm -> User) -> Model -> Model
-transitionUser fn model =
-    { model
-        | user =
-            case model.user of
-                Anonymous world credentialsForm ->
-                    fn world credentialsForm
-
-                SigningUp world credentialsForm ->
-                    fn world credentialsForm
-
-                SigningUpError _ world credentialsForm ->
-                    fn world credentialsForm
-
-                UnknownError _ world credentialsForm ->
-                    fn world credentialsForm
-
-                LoggingIn world credentialsForm ->
-                    fn world credentialsForm
-
-                LoggingInError _ world credentialsForm ->
-                    fn world credentialsForm
-
-                LoggedIn _ ->
-                    model.user
-    }
+updateUser : (User -> User) -> Model -> Model
+updateUser fn model =
+    { model | user = fn model.user }
 
 
-logoutUser : Model -> Model
-logoutUser model =
-    { model
-        | user =
-            case model.user of
-                Anonymous _ _ ->
-                    model.user
-
-                SigningUp world credentialsForm ->
-                    Anonymous world credentialsForm
-
-                SigningUpError _ world credentialsForm ->
-                    Anonymous world credentialsForm
-
-                UnknownError _ world credentialsForm ->
-                    Anonymous world credentialsForm
-
-                LoggingIn world credentialsForm ->
-                    Anonymous world credentialsForm
-
-                LoggingInError _ world credentialsForm ->
-                    Anonymous world credentialsForm
-
-                LoggedIn { name, world } ->
-                    Anonymous
-                        (world |> RemoteData.map Shared.World.clientToAnonymous)
-                        { name = name, password = "" }
-    }
+getAuthFromForm : Model -> Maybe (Auth Hashed)
+getAuthFromForm model =
+    model.user
+        |> User.getAuthFromForm
 
 
-getUncheckedAuth : Model -> Maybe Auth
-getUncheckedAuth model =
-    case model.user of
-        Anonymous _ form ->
-            Just (toAuth form)
-
-        SigningUp _ form ->
-            Just (toAuth form)
-
-        SigningUpError _ _ form ->
-            Just (toAuth form)
-
-        UnknownError _ _ form ->
-            Just (toAuth form)
-
-        LoggingIn _ form ->
-            Just (toAuth form)
-
-        LoggingInError _ _ form ->
-            Just (toAuth form)
-
-        LoggedIn _ ->
-            Nothing
-
-
-getAuth : Model -> Maybe Auth
-getAuth model =
-    case model.user of
-        Anonymous _ _ ->
-            Nothing
-
-        SigningUp _ _ ->
-            Nothing
-
-        SigningUpError _ _ _ ->
-            Nothing
-
-        UnknownError _ _ _ ->
-            Nothing
-
-        LoggingIn _ _ ->
-            Nothing
-
-        LoggingInError _ _ _ ->
-            Nothing
-
-        LoggedIn { name, hashedPassword } ->
-            Just
-                { name = name
-                , hashedPassword = hashedPassword
-                }
-
-
-mapCredentialsForm : (CredentialsForm -> CredentialsForm) -> Model -> Model
-mapCredentialsForm fn model =
-    { model
-        | user =
-            case model.user of
-                Anonymous world credentialsForm ->
-                    Anonymous world (fn credentialsForm)
-
-                SigningUp world credentialsForm ->
-                    SigningUp world (fn credentialsForm)
-
-                SigningUpError error world credentialsForm ->
-                    SigningUpError error world (fn credentialsForm)
-
-                UnknownError error world credentialsForm ->
-                    UnknownError error world (fn credentialsForm)
-
-                LoggingIn world credentialsForm ->
-                    LoggingIn world (fn credentialsForm)
-
-                LoggingInError error world credentialsForm ->
-                    LoggingInError error world (fn credentialsForm)
-
-                LoggedIn _ ->
-                    model.user
-    }
-
-
-mapLoggedInUser : (LoggedInUser -> LoggedInUser) -> Model -> Model
-mapLoggedInUser fn model =
-    { model
-        | user =
-            case model.user of
-                Anonymous _ _ ->
-                    model.user
-
-                SigningUp _ _ ->
-                    model.user
-
-                SigningUpError _ _ _ ->
-                    model.user
-
-                UnknownError _ _ _ ->
-                    model.user
-
-                LoggingIn _ _ ->
-                    model.user
-
-                LoggingInError _ _ _ ->
-                    model.user
-
-                LoggedIn loggedInUser ->
-                    LoggedIn (fn loggedInUser)
-    }
-
-
-mapAnonymousWorld : (WebData AnonymousClientWorld -> WebData AnonymousClientWorld) -> Model -> Model
-mapAnonymousWorld fn model =
-    { model
-        | user =
-            case model.user of
-                Anonymous world form ->
-                    Anonymous (fn world) form
-
-                SigningUp world form ->
-                    SigningUp (fn world) form
-
-                SigningUpError error world form ->
-                    SigningUpError error (fn world) form
-
-                UnknownError error world form ->
-                    UnknownError error (fn world) form
-
-                LoggingIn world form ->
-                    LoggingIn (fn world) form
-
-                LoggingInError error world form ->
-                    LoggingInError error (fn world) form
-
-                LoggedIn loggedInUser ->
-                    model.user
-    }
+getAuthFromUser : Model -> Maybe (Auth Hashed)
+getAuthFromUser model =
+    model.user
+        |> User.getAuthFromUser
 
 
 setName : String -> Model -> Model
 setName name model =
     model
-        |> mapCredentialsForm (\form -> { form | name = name })
+        |> updateUser (User.mapForm (\form -> { form | name = name }))
 
 
-setPassword : String -> Model -> Model
+setPassword : Password Plaintext -> Model -> Model
 setPassword password model =
     model
-        |> mapCredentialsForm (\form -> { form | password = password })
+        |> updateUser (User.mapForm (\form -> { form | password = password }))
 
 
 updateWorld : WithWorld a -> Model -> Model
 updateWorld { world } model =
     model
-        |> mapLoggedInUser (\user -> { user | world = Success world })
+        |> updateUser (User.mapLoggedInUser (\user -> { user | world = Success world }))
 
 
 updateAnonymousWorld : WithAnonymousWorld a -> Model -> Model
 updateAnonymousWorld { world } model =
     model
-        |> mapAnonymousWorld (\_ -> Success world)
+        |> updateUser (User.mapLoggedOffWorld (\_ -> Success world))
 
 
 emptyMessages : Model -> Model
 emptyMessages model =
     model
-        |> mapLoggedInUser (\user -> { user | messages = [] })
+        |> updateUser (User.mapLoggedInUser (\user -> { user | messages = [] }))
 
 
 updateMessages : WithMessageQueue a -> Model -> Model
 updateMessages { messageQueue } model =
     model
-        |> mapLoggedInUser (\user -> { user | messages = user.messages ++ messageQueue })
+        |> updateUser (User.mapLoggedInUser (\user -> { user | messages = user.messages ++ messageQueue }))
 
 
 setWorldAsLoading : Model -> Model
 setWorldAsLoading model =
     model
-        |> mapLoggedInUser (\user -> { user | world = Loading })
+        |> updateUser (User.mapLoggedInUser (\user -> { user | world = Loading }))
 
 
 addMessage : String -> Model -> Model
@@ -593,24 +386,24 @@ addMessage message model =
 addMessages : List String -> Model -> Model
 addMessages messages model =
     model
-        |> mapLoggedInUser (\user -> { user | messages = user.messages ++ messages })
+        |> updateUser (User.mapLoggedInUser (\user -> { user | messages = user.messages ++ messages }))
 
 
-sendRequest : String -> Route -> Maybe Auth -> Cmd Msg
+sendRequest : String -> Route -> Maybe (Auth Hashed) -> Cmd Msg
 sendRequest serverEndpoint route maybeAuth =
     let
-        authHeaders : Maybe Auth -> List Http.Header
+        authHeaders : Maybe (Auth Hashed) -> List Http.Header
         authHeaders maybeAuth_ =
             maybeAuth_
                 |> Maybe.map
-                    (\{ name, hashedPassword } ->
+                    (\{ name, password } ->
                         [ Http.header "x-username" name
-                        , Http.header "x-hashed-password" hashedPassword
+                        , Http.header "x-hashed-password" (Shared.Password.unwrapHashed password)
                         ]
                     )
                 |> Maybe.withDefault []
 
-        send : (WebData a -> Msg) -> Decoder a -> Maybe Auth -> Cmd Msg
+        send : (WebData a -> Msg) -> Decoder a -> Maybe (Auth Hashed) -> Cmd Msg
         send tagger decoder maybeAuth_ =
             Http.request
                 { method = "GET"
@@ -681,35 +474,35 @@ view model =
     { title = "NuAshworld"
     , body =
         case model.user of
-            Anonymous world credentialsForm ->
-                viewAnonymous world credentialsForm Nothing
+            Anonymous world form ->
+                viewAnonymous world form Nothing
 
-            SigningUp world credentialsForm ->
+            SigningUp world form ->
                 viewAnonymous
                     world
-                    credentialsForm
+                    form
                     (Just "Signing up")
 
-            SigningUpError error world credentialsForm ->
+            SigningUpError error world form ->
                 viewAnonymous
                     world
-                    credentialsForm
+                    form
                     (Just (Route.handlers.signup.errorToString error))
 
-            UnknownError error world credentialsForm ->
+            UnknownError error world form ->
                 viewAnonymous world
-                    credentialsForm
+                    form
                     (Just error)
 
-            LoggingIn world credentialsForm ->
+            LoggingIn world form ->
                 viewAnonymous
                     world
-                    credentialsForm
+                    form
                     (Just "Logging in")
 
-            LoggingInError error world credentialsForm ->
+            LoggingInError error world form ->
                 viewAnonymous world
-                    credentialsForm
+                    form
                     (Just (Route.handlers.login.errorToString error))
 
             LoggedIn loggedInUser ->
@@ -717,15 +510,15 @@ view model =
     }
 
 
-viewAnonymous : WebData AnonymousClientWorld -> CredentialsForm -> Maybe String -> List (Html Msg)
-viewAnonymous world credentialsForm maybeMessage =
-    [ viewCredentialsForm credentialsForm maybeMessage
+viewAnonymous : WebData AnonymousClientWorld -> Form -> Maybe String -> List (Html Msg)
+viewAnonymous world form maybeMessage =
+    [ viewCredentialsForm form maybeMessage
     , viewAnonymousWorld world
     ]
 
 
-viewCredentialsForm : CredentialsForm -> Maybe String -> Html Msg
-viewCredentialsForm ({ name, password } as form) maybeMessage =
+viewCredentialsForm : Form -> Maybe String -> Html Msg
+viewCredentialsForm { name, password } maybeMessage =
     let
         unmetRules : List String
         unmetRules =
@@ -734,7 +527,7 @@ viewCredentialsForm ({ name, password } as form) maybeMessage =
                     Just "Name must not be empty"
                   else
                     Nothing
-                , if String.length password < 5 then
+                , if String.length (Shared.Password.unwrapPlaintext password) < 5 then
                     Just "Password must be 5 or more characters long"
                   else
                     Nothing
@@ -765,7 +558,7 @@ viewCredentialsForm ({ name, password } as form) maybeMessage =
             []
         , H.input
             [ HE.onInput SetPassword
-            , HA.value password
+            , HA.value (Shared.Password.unwrapPlaintext password)
             , HA.type_ "password"
             , HA.placeholder "Password"
             ]
@@ -776,13 +569,6 @@ viewCredentialsForm ({ name, password } as form) maybeMessage =
             |> Maybe.map (\message -> H.div [] [ H.text message ])
             |> Maybe.withDefault (H.text "")
         ]
-
-
-toAuth : CredentialsForm -> Auth
-toAuth { name, password } =
-    { name = name
-    , hashedPassword = Shared.Password.hash password
-    }
 
 
 viewLoggedInUser : LoggedInUser -> List (Html Msg)

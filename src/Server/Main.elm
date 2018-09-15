@@ -13,7 +13,7 @@ import Server.Route as Route
         )
 import Server.World
 import Shared.Fight exposing (Fight(..))
-import Shared.Password exposing (Auth)
+import Shared.Password exposing (Auth, Hashed)
 import Shared.Player exposing (ServerPlayer)
 import Shared.World exposing (ServerWorld)
 import Time exposing (Posix)
@@ -180,11 +180,13 @@ update msg model =
             )
 
 
-authHeaders : Dict String String -> Maybe Auth
+authHeaders : Dict String String -> Maybe (Auth Hashed)
 authHeaders headers =
     Maybe.map2 Auth
         (Dict.get "x-username" headers)
-        (Dict.get "x-hashed-password" headers)
+        (Dict.get "x-hashed-password" headers
+            |> Maybe.map Shared.Password.hashedPassword
+        )
 
 
 getMessageQueue : String -> Model -> ( List String, Model )
@@ -219,11 +221,12 @@ handleNotFound url response model =
     )
 
 
-handleSignup : Maybe Auth -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleSignup : Maybe (Auth Hashed) -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleSignup maybeAuth response model =
     maybeAuth
+        |> Maybe.map Shared.Password.verify
         |> Maybe.map
-            (\{ name, hashedPassword } ->
+            (\{ name, password } ->
                 if nameExists name model.world then
                     ( model
                     , sendHttpResponse response
@@ -233,7 +236,7 @@ handleSignup maybeAuth response model =
                     let
                         newPlayer : ServerPlayer
                         newPlayer =
-                            Shared.Player.init name hashedPassword
+                            Shared.Player.init name password
 
                         newModel : Model
                         newModel =
@@ -266,12 +269,12 @@ nameExists name world =
         |> not
 
 
-handleLogin : Maybe Auth -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleLogin : Maybe (Auth Hashed) -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleLogin maybeAuth response model =
     maybeAuth
         |> Maybe.map
             (\auth ->
-                if Shared.Password.checksOut auth model.world then
+                if Shared.Password.checksOut auth model.world.players then
                     let
                         ( messageQueue, newModel ) =
                             getMessageQueue auth.name model
@@ -304,12 +307,12 @@ handleLogout response model =
     )
 
 
-handleRefresh : Maybe Auth -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleRefresh : Maybe (Auth Hashed) -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleRefresh maybeAuth response model =
     maybeAuth
         |> Maybe.map
             (\auth ->
-                if Shared.Password.checksOut auth model.world then
+                if Shared.Password.checksOut auth model.world.players then
                     let
                         ( messageQueue, newModel ) =
                             getMessageQueue auth.name model
@@ -342,7 +345,7 @@ handleRefreshAnonymous response model =
     )
 
 
-handleAttack : Maybe Auth -> String -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleAttack : Maybe (Auth Hashed) -> String -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleAttack maybeAuth them response ({ world } as model) =
     maybeAuth
         |> Maybe.map
@@ -352,7 +355,7 @@ handleAttack maybeAuth them response ({ world } as model) =
                     you =
                         auth.name
                 in
-                if Shared.Password.checksOut auth world then
+                if Shared.Password.checksOut auth world.players then
                     if Server.World.isDead you world then
                         handleAttackYouDead you response model
                     else if Server.World.isDead them world then

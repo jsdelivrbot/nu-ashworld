@@ -17,6 +17,7 @@ module Shared.Player
 
 import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE
+import Shared.Password as Password exposing (Password, Verified)
 
 
 type alias ClientPlayer =
@@ -40,20 +41,20 @@ type alias ServerPlayer =
     , xp : Int
     , messageQueue : List String
     , name : String
-    , hashedPassword : String
+    , password : Password Verified
     }
 
 
 toOther : ClientPlayer -> ClientOtherPlayer
-toOther player =
-    { hp = player.hp
-    , xp = player.xp
-    , name = player.name
+toOther { hp, xp, name } =
+    { hp = hp
+    , xp = xp
+    , name = name
     }
 
 
 serverToClient : ServerPlayer -> ClientPlayer
-serverToClient ({ hp, xp, maxHp, name } as player) =
+serverToClient { hp, xp, maxHp, name } =
     { hp = hp
     , xp = xp
     , maxHp = maxHp
@@ -62,43 +63,43 @@ serverToClient ({ hp, xp, maxHp, name } as player) =
 
 
 serverToClientOther : ServerPlayer -> ClientOtherPlayer
-serverToClientOther ({ hp, xp, name } as player) =
+serverToClientOther { hp, xp, name } =
     { hp = hp
     , xp = xp
     , name = name
     }
 
 
-init : String -> String -> ServerPlayer
-init name hashedPassword =
+init : String -> Password Verified -> ServerPlayer
+init name password =
     { hp = 10
     , maxHp = 10
     , xp = 0
     , messageQueue = []
     , name = name
-    , hashedPassword = hashedPassword
+    , password = password
     }
 
 
 encode : ClientPlayer -> JE.Value
-encode player =
+encode { hp, maxHp, xp, name } =
     JE.object
-        [ ( "hp", JE.int player.hp )
-        , ( "maxHp", JE.int player.maxHp )
-        , ( "xp", JE.int player.xp )
-        , ( "name", JE.string player.name )
+        [ ( "hp", JE.int hp )
+        , ( "maxHp", JE.int maxHp )
+        , ( "xp", JE.int xp )
+        , ( "name", JE.string name )
         ]
 
 
 encodeServer : ServerPlayer -> JE.Value
-encodeServer player =
+encodeServer { hp, maxHp, xp, messageQueue, name, password } =
     JE.object
-        [ ( "hp", JE.int player.hp )
-        , ( "maxHp", JE.int player.maxHp )
-        , ( "xp", JE.int player.xp )
-        , ( "messageQueue", JE.list JE.string player.messageQueue )
-        , ( "name", JE.string player.name )
-        , ( "hashedPassword", JE.string player.hashedPassword )
+        [ ( "hp", JE.int hp )
+        , ( "maxHp", JE.int maxHp )
+        , ( "xp", JE.int xp )
+        , ( "messageQueue", JE.list JE.string messageQueue )
+        , ( "name", JE.string name )
+        , ( "password", Password.encodeVerified password )
         ]
 
 
@@ -119,7 +120,7 @@ serverDecoder =
         (JD.field "xp" JD.int)
         (JD.field "messageQueue" (JD.list JD.string))
         (JD.field "name" JD.string)
-        (JD.field "hashedPassword" JD.string)
+        (JD.field "password" Password.verifiedDecoder)
 
 
 encodeOtherPlayer : ClientOtherPlayer -> JE.Value
