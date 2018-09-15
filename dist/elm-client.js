@@ -5924,12 +5924,12 @@ var elm$core$Result$map = F2(
 			return elm$core$Result$Err(e);
 		}
 	});
-var author$project$Server$Route$signupResponse = F2(
-	function (name, world) {
+var author$project$Server$Route$signupResponse = F3(
+	function (messages, name, world) {
 		return A2(
 			elm$core$Result$map,
 			function (clientWorld) {
-				return A2(author$project$Server$Route$SignupResponse, clientWorld, _List_Nil);
+				return A2(author$project$Server$Route$SignupResponse, clientWorld, messages);
 			},
 			A2(
 				elm$core$Result$fromMaybe,
