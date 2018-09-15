@@ -365,11 +365,11 @@ signupDecoder =
         (JD.field "messageQueue" Shared.MessageQueue.decoder)
 
 
-signupResponse : String -> ServerWorld -> Result SignupError SignupResponse
-signupResponse name world =
+signupResponse : List String -> String -> ServerWorld -> Result SignupError SignupResponse
+signupResponse messages name world =
     Shared.World.serverToClient name world
         |> Result.fromMaybe CouldntFindNewlyCreatedUser
-        |> Result.map (\clientWorld -> SignupResponse clientWorld [])
+        |> Result.map (\clientWorld -> SignupResponse clientWorld messages)
 
 
 signupErrorFromString : String -> Maybe SignupError
