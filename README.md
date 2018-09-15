@@ -11,7 +11,6 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 
 > Roughly in the order of "I'd like to do this the most", `DESC`.
 
-- [ ] Randomized fight
 - [ ] Stat system to influence the fight
 - [ ] Action points, capped, once per ... what, an hour? (ENV flag to make it go faster for debug/testing purposes?)
 - [ ] Timestamps in the messages
@@ -39,3 +38,4 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 - [x] Actual authentication and security
 - [x] Logout
 - [x] See list of players even when not logged in
+- [x] Randomized fight

@@ -5,6 +5,7 @@ import Extra.Json as EJ
 import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE
 import Platform
+import Random exposing (Generator)
 import Server.Route as Route
     exposing
         ( AuthError(..)
@@ -75,6 +76,7 @@ type Msg
     = HealTick Posix
     | HttpRequest HttpRequestData
     | HttpRequestError JD.Error
+    | GeneratedFight FightData
 
 
 type alias HttpRequestData =
@@ -159,25 +161,13 @@ update msg model =
                     handleAttack (authHeaders headers) attackData response model
 
         HttpRequestError error ->
-            ( model
-            , log (JD.errorToString error)
-            )
+            handleHttpRequestError error model
 
         HealTick timeOfTick ->
-            let
-                newWorld : ServerWorld
-                newWorld =
-                    model.world
-                        |> Server.World.healEverybody
+            handleHealTick timeOfTick model
 
-                newModel : Model
-                newModel =
-                    model
-                        |> setWorld newWorld
-            in
-            ( newModel
-            , Cmd.none
-            )
+        GeneratedFight fightData ->
+            handleAttackWithGeneratedFight fightData model
 
 
 authHeaders : Dict String String -> Maybe (Auth Hashed)
@@ -187,6 +177,31 @@ authHeaders headers =
         (Dict.get "x-hashed-password" headers
             |> Maybe.map Shared.Password.hashedPassword
         )
+
+
+handleHttpRequestError : JD.Error -> Model -> ( Model, Cmd Msg )
+handleHttpRequestError error model =
+    ( model
+    , log (JD.errorToString error)
+    )
+
+
+handleHealTick : Posix -> Model -> ( Model, Cmd Msg )
+handleHealTick timeOfTick model =
+    let
+        newWorld : ServerWorld
+        newWorld =
+            model.world
+                |> Server.World.healEverybody
+
+        newModel : Model
+        newModel =
+            model
+                |> setWorld newWorld
+    in
+    ( newModel
+    , Cmd.none
+    )
 
 
 getMessageQueue : String -> Model -> ( List String, Model )
@@ -421,12 +436,38 @@ handleAttackThemDead you them response model =
 
 handleAttackNobodyDead : String -> String -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleAttackNobodyDead you them response model =
-    let
-        fight : Fight
-        fight =
-            -- TODO randomize
-            YouWon
+    ( model
+    , Random.generate GeneratedFight (fightDataGenerator you them response)
+    )
 
+
+type alias FightData =
+    { you : String
+    , them : String
+    , fight : Fight
+    , response : JE.Value
+    }
+
+
+fightDataGenerator : String -> String -> JE.Value -> Generator FightData
+fightDataGenerator you them response =
+    Random.map4 FightData
+        (Random.constant you)
+        (Random.constant them)
+        fightGenerator
+        (Random.constant response)
+
+
+fightGenerator : Generator Fight
+fightGenerator =
+    Random.uniform
+        YouWon
+        [ YouLost ]
+
+
+handleAttackWithGeneratedFight : FightData -> Model -> ( Model, Cmd Msg )
+handleAttackWithGeneratedFight { you, them, fight, response } model =
+    let
         newWorld : ServerWorld
         newWorld =
             case fight of
