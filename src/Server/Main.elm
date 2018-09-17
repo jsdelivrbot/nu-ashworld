@@ -6,16 +6,12 @@ import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE
 import Platform
 import Random exposing (Generator)
-import Server.Route as Route
-    exposing
-        ( AuthError(..)
-        , Route(..)
-        , SignupError(..)
-        )
+import Server.Route as Route exposing (AuthError(..), Route(..), SignupError(..))
 import Server.World
 import Shared.Fight exposing (Fight(..))
 import Shared.Password exposing (Auth, Hashed)
 import Shared.Player exposing (ServerPlayer)
+import Shared.Special exposing (Special, SpecialAttr)
 import Shared.World exposing (ServerWorld)
 import Time exposing (Posix)
 
@@ -159,6 +155,9 @@ update msg model =
 
                 Attack attackData ->
                     handleAttack (authHeaders headers) attackData response model
+
+                IncSpecialAttr attr ->
+                    handleIncSpecialAttr (authHeaders headers) attr response model
 
         HttpRequestError error ->
             handleHttpRequestError error model
@@ -396,6 +395,54 @@ handleAttack maybeAuth them response ({ world } as model) =
             )
 
 
+handleIncSpecialAttr : Maybe (Auth Hashed) -> SpecialAttr -> JE.Value -> Model -> ( Model, Cmd Msg )
+handleIncSpecialAttr maybeAuth attr response model =
+    maybeAuth
+        |> Maybe.map
+            (\auth ->
+                let
+                    ( messageQueue, modelWithoutMessages ) =
+                        getMessageQueue auth.name model
+
+                    maybePlayer : Maybe ServerPlayer
+                    maybePlayer =
+                        model.world.players
+                            |> Dict.get auth.name
+
+                    ( newModel, newMessageQueue ) =
+                        maybePlayer
+                            |> Maybe.map
+                                (\player ->
+                                    if player.availableSpecial == 0 then
+                                        ( modelWithoutMessages
+                                        , messageQueue ++ [ "You have no SPECIAL points left to redistribute!" ]
+                                        )
+                                    else
+                                        ( model
+                                            |> updateWorld (Server.World.incSpecialAttr attr player.availableSpecial auth.name)
+                                        , messageQueue ++ [ "You have successfully upgraded your " ++ Shared.Special.label attr ]
+                                        )
+                                )
+                            |> Maybe.withDefault
+                                ( modelWithoutMessages
+                                , messageQueue
+                                )
+                in
+                ( newModel
+                , sendHttpResponse response
+                    (Route.handlers.incSpecialAttr.response newMessageQueue auth.name newModel.world
+                        |> Maybe.map Route.handlers.incSpecialAttr.encode
+                        |> Maybe.withDefault (Route.handlers.incSpecialAttr.encodeError NameNotFound)
+                    )
+                )
+            )
+        |> Maybe.withDefault
+            ( model
+            , sendHttpResponse response
+                (Route.handlers.incSpecialAttr.encodeError AuthenticationHeadersMissing)
+            )
+
+
 handleAttackYouDead : String -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleAttackYouDead you response model =
     let
@@ -437,7 +484,7 @@ handleAttackThemDead you them response model =
 handleAttackNobodyDead : String -> String -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleAttackNobodyDead you them response model =
     ( model
-    , Random.generate GeneratedFight (fightDataGenerator you them response)
+    , Random.generate GeneratedFight (fightDataGenerator you them response model)
     )
 
 
@@ -449,20 +496,49 @@ type alias FightData =
     }
 
 
-fightDataGenerator : String -> String -> JE.Value -> Generator FightData
-fightDataGenerator you them response =
+fightDataGenerator : String -> String -> JE.Value -> Model -> Generator FightData
+fightDataGenerator you them response model =
+    let
+        yourSpecial : Maybe Special
+        yourSpecial =
+            getSpecial you model
+
+        theirSpecial : Maybe Special
+        theirSpecial =
+            getSpecial them model
+    in
     Random.map4 FightData
         (Random.constant you)
         (Random.constant them)
-        fightGenerator
+        (fightGenerator yourSpecial theirSpecial)
         (Random.constant response)
 
 
-fightGenerator : Generator Fight
-fightGenerator =
-    Random.uniform
-        YouWon
-        [ YouLost ]
+fightGenerator : Maybe Special -> Maybe Special -> Generator Fight
+fightGenerator you them =
+    let
+        gen_ : Special -> Special -> Generator Fight
+        gen_ you_ them_ =
+            -- TODO this is currently very stupid
+            Random.weighted
+                ( toFloat (Shared.Special.sum you_), YouWon )
+                [ ( toFloat (Shared.Special.sum them_), YouLost ) ]
+
+        fallback : Generator Fight
+        fallback =
+            Random.uniform
+                YouWon
+                [ YouLost ]
+    in
+    Maybe.map2 gen_ you them
+        |> Maybe.withDefault fallback
+
+
+getSpecial : String -> Model -> Maybe Special
+getSpecial name model =
+    model.world.players
+        |> Dict.get name
+        |> Maybe.map .special
 
 
 handleAttackWithGeneratedFight : FightData -> Model -> ( Model, Cmd Msg )

@@ -2,6 +2,7 @@ module Server.Route
     exposing
         ( AttackResponse
         , AuthError(..)
+        , IncSpecialAttrResponse
         , LoginResponse
         , LogoutResponse
         , RefreshAnonymousResponse
@@ -20,12 +21,8 @@ import Shared.Fight exposing (Fight)
 import Shared.MessageQueue
 import Shared.Password exposing (Auth)
 import Shared.Player
-import Shared.World
-    exposing
-        ( AnonymousClientWorld
-        , ClientWorld
-        , ServerWorld
-        )
+import Shared.Special exposing (SpecialAttr)
+import Shared.World exposing (AnonymousClientWorld, ClientWorld, ServerWorld)
 import Url
 import Url.Builder
 import Url.Parser exposing ((</>), Parser)
@@ -39,6 +36,7 @@ type Route
     | RefreshAnonymous
     | Attack String
     | Logout
+    | IncSpecialAttr SpecialAttr
 
 
 handlers =
@@ -49,6 +47,7 @@ handlers =
     , attack = attack
     , logout = logout
     , refreshAnonymous = refreshAnonymous
+    , incSpecialAttr = incSpecialAttr
     }
 
 
@@ -122,6 +121,17 @@ logout =
     }
 
 
+incSpecialAttr =
+    { toUrl = incSpecialAttrToUrl
+    , urlParser = incSpecialAttrUrlParser
+    , encode = encodeIncSpecialAttr
+    , encodeError = encodeAuthError
+    , decoder = incSpecialAttrDecoder
+    , errorDecoder = authErrorDecoder
+    , response = incSpecialAttrResponse
+    }
+
+
 type alias LoginResponse =
     { world : ClientWorld
     , messageQueue : List String
@@ -144,10 +154,22 @@ type alias RefreshAnonymousResponse =
     }
 
 
+type alias SignupResponse =
+    { world : ClientWorld
+    , messageQueue : List String
+    }
+
+
 type alias AttackResponse =
     { world : ClientWorld
     , messageQueue : List String
     , fight : Maybe Fight
+    }
+
+
+type alias IncSpecialAttrResponse =
+    { world : ClientWorld
+    , messageQueue : List String
     }
 
 
@@ -161,12 +183,6 @@ type AuthError
     = NameAndPasswordDoesntCheckOut
     | AuthenticationHeadersMissing
     | NameNotFound
-
-
-type alias SignupResponse =
-    { world : ClientWorld
-    , messageQueue : List String
-    }
 
 
 
@@ -205,6 +221,9 @@ toString route =
         Logout ->
             handlers.logout.toUrl
 
+        IncSpecialAttr attr ->
+            handlers.incSpecialAttr.toUrl attr
+
 
 parser : Parser (Route -> a) a
 parser =
@@ -215,6 +234,7 @@ parser =
         , handlers.logout.urlParser
         , handlers.refreshAnonymous.urlParser
         , handlers.attack.urlParser
+        , handlers.incSpecialAttr.urlParser
         ]
 
 
@@ -242,6 +262,9 @@ parserFailsafe route =
             "yes I have added the new parser to `parser` above"
 
         Logout ->
+            "yes I have added the new parser to `parser` above"
+
+        IncSpecialAttr _ ->
             "yes I have added the new parser to `parser` above"
 
 
@@ -445,7 +468,7 @@ loginResponse messageQueue name world =
 refreshResponse : List String -> String -> ServerWorld -> Maybe RefreshResponse
 refreshResponse messageQueue name world =
     Shared.World.serverToClient name world
-        |> Maybe.map (\clientWorld -> LoginResponse clientWorld messageQueue)
+        |> Maybe.map (\clientWorld -> RefreshResponse clientWorld messageQueue)
 
 
 encodeRefresh : RefreshResponse -> JE.Value
@@ -590,3 +613,45 @@ logoutDecoder : Decoder LogoutResponse
 logoutDecoder =
     JD.map LogoutResponse
         (JD.field "world" Shared.World.anonymousDecoder)
+
+
+
+-- INC SPECIAL ATTR
+
+
+incSpecialAttrToUrl : SpecialAttr -> String
+incSpecialAttrToUrl attr =
+    Url.Builder.absolute
+        [ "inc-special-attr"
+        , String.toLower (Shared.Special.label attr)
+        ]
+        []
+
+
+incSpecialAttrUrlParser : Parser (Route -> a) a
+incSpecialAttrUrlParser =
+    Url.Parser.map IncSpecialAttr
+        (Url.Parser.s "inc-special-attr"
+            </> Shared.Special.urlParser
+        )
+
+
+encodeIncSpecialAttr : IncSpecialAttrResponse -> JE.Value
+encodeIncSpecialAttr { world, messageQueue } =
+    JE.object
+        [ ( "world", Shared.World.encode world )
+        , ( "messageQueue", Shared.MessageQueue.encode messageQueue )
+        ]
+
+
+incSpecialAttrDecoder : Decoder IncSpecialAttrResponse
+incSpecialAttrDecoder =
+    JD.map2 IncSpecialAttrResponse
+        (JD.field "world" Shared.World.decoder)
+        (JD.field "messageQueue" Shared.MessageQueue.decoder)
+
+
+incSpecialAttrResponse : List String -> String -> ServerWorld -> Maybe IncSpecialAttrResponse
+incSpecialAttrResponse messageQueue name world =
+    Shared.World.serverToClient name world
+        |> Maybe.map (\clientWorld -> IncSpecialAttrResponse clientWorld messageQueue)

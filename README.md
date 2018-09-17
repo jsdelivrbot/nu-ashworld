@@ -5,13 +5,13 @@
 
 A game attempting to be like the old [Ashworld](http://web.archive.org/web/20090312000154/http://ashworld.webd.pl:80/index.php?strona=7) game. Definitely not there yet :)
 
-It is still very much in flux and less-than-alpha quality. Expect whatever progress you do in the game to get lost regularly. There is some basic persistence baked in, but until the game goes to some kind of alpha or beta, I don't worry too much about it.
+It is still very much in flux and less-than-alpha quality. Expect whatever progress you do in the game to get lost regularly. There is some basic persistence baked in, but until the game goes to some kind of alpha or beta, I don't worry about dropping the whole database too much.
 
 ## Next steps:
 
 > Roughly in the order of "I'd like to do this the most", `DESC`.
 
-- [ ] Stat system to influence the fight
+- [ ] SPECIAL stat system influences the fight
 - [ ] Action points, capped, once per ... what, an hour? (ENV flag to make it go faster for debug/testing purposes?)
 - [ ] Timestamps in the messages
 - [ ] Visibility of some "next tick in/at ..." information
@@ -39,3 +39,4 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 - [x] Logout
 - [x] See list of players even when not logged in
 - [x] Randomized fight
+- [x] SPECIAL stat system

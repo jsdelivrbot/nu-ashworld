@@ -1,6 +1,7 @@
 module Client.User
     exposing
-        ( Form
+        ( Config
+        , Form
         , LoggedInUser
         , User(..)
         , formToAuth
@@ -17,11 +18,19 @@ module Client.User
         , signingUpError
         , transitionFromLoggedOff
         , unknownError
+        , viewLoggedIn
+        , viewLoggedOff
         )
 
+import Html as H exposing (Attribute, Html)
+import Html.Attributes as HA
+import Html.Events as HE
 import RemoteData exposing (RemoteData(..), WebData)
-import Server.Route as Route exposing (AuthError, SignupError)
+import Server.Route as Route exposing (AuthError, Route(..), SignupError)
+import Shared.Level
 import Shared.Password exposing (Auth, Hashed, Password, Plaintext)
+import Shared.Player exposing (ClientOtherPlayer, ClientPlayer)
+import Shared.Special exposing (SpecialAttr(..))
 import Shared.World exposing (AnonymousClientWorld, ClientWorld)
 
 
@@ -49,6 +58,13 @@ type alias LoggedInUser =
     , password : Password Hashed
     , world : WebData ClientWorld
     , messages : List String
+    }
+
+
+type alias Config msg =
+    { setName : String -> msg
+    , setPassword : String -> msg
+    , request : Route -> msg
     }
 
 
@@ -255,3 +271,278 @@ formToAuth { name, password } =
     { name = name
     , password = Shared.Password.hash password
     }
+
+
+viewLoggedOff : Config msg -> WebData AnonymousClientWorld -> Form -> Maybe String -> List (Html msg)
+viewLoggedOff config world form maybeMessage =
+    [ viewCredentialsForm config form maybeMessage
+    , viewAnonymousWorld world
+    ]
+
+
+viewCredentialsForm : Config msg -> Form -> Maybe String -> Html msg
+viewCredentialsForm c { name, password } maybeMessage =
+    let
+        unmetRules : List String
+        unmetRules =
+            List.filterMap identity
+                [ if String.isEmpty name then
+                    Just "Name must not be empty"
+                  else
+                    Nothing
+                , if String.length (Shared.Password.unwrapPlaintext password) < 5 then
+                    Just "Password must be 5 or more characters long"
+                  else
+                    Nothing
+                ]
+
+        hasUnmetRules : Bool
+        hasUnmetRules =
+            not (List.isEmpty unmetRules)
+
+        button : Route -> String -> Html msg
+        button route label =
+            H.button
+                (if hasUnmetRules then
+                    [ HA.disabled True
+                    , HA.title (String.join "; " unmetRules)
+                    ]
+                 else
+                    [ onClickRequest c route ]
+                )
+                [ H.text label ]
+    in
+    H.div []
+        [ H.input
+            [ HE.onInput c.setName
+            , HA.value name
+            , HA.placeholder "Name"
+            ]
+            []
+        , H.input
+            [ HE.onInput c.setPassword
+            , HA.value (Shared.Password.unwrapPlaintext password)
+            , HA.type_ "password"
+            , HA.placeholder "Password"
+            ]
+            []
+        , button Signup "Signup"
+        , button Login "Login"
+        , maybeMessage
+            |> Maybe.map (\message -> H.div [] [ H.text message ])
+            |> Maybe.withDefault (H.text "")
+        ]
+
+
+viewAnonymousWorld : WebData AnonymousClientWorld -> Html msg
+viewAnonymousWorld world =
+    case world of
+        NotAsked ->
+            H.text "Eh, the game should probably ask the server for the world data - oops. Can you ping @janiczek?"
+
+        Loading ->
+            H.text "Loading"
+
+        Failure err ->
+            H.text "Error :("
+
+        Success world_ ->
+            viewPlayers world_
+
+
+viewLoggedIn : Config msg -> LoggedInUser -> List (Html msg)
+viewLoggedIn c user =
+    [ viewButtons c user.world
+    , viewWorld c user.world
+    , viewMessages user.messages
+    ]
+
+
+viewMessages : List String -> Html msg
+viewMessages messages =
+    H.div []
+        [ H.strong [] [ H.text "Messages:" ]
+        , H.ul [] (List.map viewMessage messages)
+        ]
+
+
+viewMessage : String -> Html msg
+viewMessage message =
+    H.li [] [ H.text message ]
+
+
+viewButtons : Config msg -> WebData ClientWorld -> Html msg
+viewButtons c world =
+    H.div []
+        [ H.button
+            [ world
+                |> RemoteData.map (\_ -> onClickRequest c Refresh)
+                |> RemoteData.withDefault (HA.disabled True)
+            ]
+            [ H.text "Refresh" ]
+        , H.button
+            [ onClickRequest c Logout ]
+            [ H.text "Logout" ]
+        ]
+
+
+onClickRequest : Config msg -> Route -> Attribute msg
+onClickRequest { request } route =
+    HE.onClick (request route)
+
+
+viewWorld : Config msg -> WebData ClientWorld -> Html msg
+viewWorld c world =
+    case world of
+        NotAsked ->
+            H.text "You're not logged in!"
+
+        Loading ->
+            H.text "Loading"
+
+        Failure err ->
+            H.text "Error :("
+
+        Success world_ ->
+            H.div []
+                [ viewPlayer c world_.player
+                , viewOtherPlayers c world_
+                ]
+
+
+viewPlayer : Config msg -> ClientPlayer -> Html msg
+viewPlayer c player =
+    let
+        viewSpecialAttr : SpecialAttr -> Html msg
+        viewSpecialAttr attr =
+            H.tr []
+                [ H.th [] [ H.text (Shared.Special.label attr) ]
+                , H.td [] [ H.text (player.special |> Shared.Special.getter attr |> String.fromInt) ]
+                , H.td []
+                    (if player.availableSpecial > 0 then
+                        [ H.button
+                            [ onClickRequest c (IncSpecialAttr attr) ]
+                            [ H.text "+" ]
+                        ]
+                     else
+                        []
+                    )
+                ]
+    in
+    H.table []
+        [ H.tr []
+            [ H.td [] []
+            , H.th [] [ H.text "PLAYER STATS" ]
+            , H.td [] []
+            ]
+        , H.tr []
+            [ H.th [] [ H.text "Name" ]
+            , H.td [] [ H.text player.name ]
+            , H.td [] []
+            ]
+        , H.tr []
+            [ H.th [] [ H.text "HP" ]
+            , H.td [] [ H.text (String.fromInt player.hp ++ "/" ++ String.fromInt player.maxHp) ]
+            , H.td [] []
+            ]
+        , H.tr []
+            [ H.th [] [ H.text "Level" ]
+            , H.td [ HA.colspan 2 ]
+                [ H.text <|
+                    String.fromInt (Shared.Level.levelForXp player.xp)
+                        ++ " ("
+                        ++ String.fromInt player.xp
+                        ++ " XP, "
+                        ++ String.fromInt (Shared.Level.xpToNextLevel player.xp)
+                        ++ " till the next level)"
+                ]
+            ]
+        , H.tr []
+            [ H.td [] []
+            , H.th [ HA.colspan 2 ] [ H.text ("SPECIAL (" ++ String.fromInt player.availableSpecial ++ " pts available)") ]
+            ]
+        , viewSpecialAttr Strength
+        , viewSpecialAttr Perception
+        , viewSpecialAttr Endurance
+        , viewSpecialAttr Charisma
+        , viewSpecialAttr Intelligence
+        , viewSpecialAttr Agility
+        , viewSpecialAttr Luck
+        ]
+
+
+type alias WithPlayers a =
+    { a | players : List ClientOtherPlayer }
+
+
+viewPlayers : WithPlayers a -> Html msg
+viewPlayers { players } =
+    H.div []
+        [ H.strong [] [ H.text "Players:" ]
+        , if List.isEmpty players then
+            H.div [] [ H.text "There are none so far!" ]
+          else
+            H.table []
+                (H.tr []
+                    [ H.th [] [ H.text "Player" ]
+                    , H.th [] [ H.text "HP" ]
+                    , H.th [] [ H.text "Level" ]
+                    , H.th [] []
+                    ]
+                    :: List.map viewOtherPlayerAnonymous players
+                )
+        ]
+
+
+type alias WithPlayer a =
+    { a | player : ClientPlayer }
+
+
+type alias WithOtherPlayers a =
+    { a | otherPlayers : List ClientOtherPlayer }
+
+
+viewOtherPlayers : Config msg -> WithPlayer (WithOtherPlayers a) -> Html msg
+viewOtherPlayers c { player, otherPlayers } =
+    H.div []
+        [ H.strong [] [ H.text "Other players:" ]
+        , if List.isEmpty otherPlayers then
+            H.div [] [ H.text "There are none so far!" ]
+          else
+            H.table []
+                (H.tr []
+                    [ H.th [] [ H.text "Player" ]
+                    , H.th [] [ H.text "HP" ]
+                    , H.th [] [ H.text "Level" ]
+                    , H.th [] []
+                    ]
+                    :: List.map (viewOtherPlayer c player) otherPlayers
+                )
+        ]
+
+
+viewOtherPlayer : Config msg -> ClientPlayer -> ClientOtherPlayer -> Html msg
+viewOtherPlayer c player otherPlayer =
+    H.tr []
+        [ H.td [] [ H.text otherPlayer.name ]
+        , H.td [] [ H.text (String.fromInt otherPlayer.hp) ]
+        , H.td [] [ H.text (String.fromInt (Shared.Level.levelForXp otherPlayer.xp)) ]
+        , H.td []
+            [ H.button
+                [ if player.hp > 0 && otherPlayer.hp > 0 then
+                    onClickRequest c (Attack otherPlayer.name)
+                  else
+                    HA.disabled True
+                ]
+                [ H.text "Attack!" ]
+            ]
+        ]
+
+
+viewOtherPlayerAnonymous : ClientOtherPlayer -> Html msg
+viewOtherPlayerAnonymous { name, hp, xp } =
+    H.tr []
+        [ H.td [] [ H.text name ]
+        , H.td [] [ H.text (String.fromInt hp) ]
+        , H.td [] [ H.text (String.fromInt (Shared.Level.levelForXp xp)) ]
+        ]
