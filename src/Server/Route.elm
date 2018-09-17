@@ -21,7 +21,7 @@ import Shared.Fight exposing (Fight)
 import Shared.MessageQueue
 import Shared.Password exposing (Auth)
 import Shared.Player
-import Shared.Special exposing (SpecialAttr)
+import Shared.Special exposing (SpecialAttr(..))
 import Shared.World exposing (AnonymousClientWorld, ClientWorld, ServerWorld)
 import Url
 import Url.Builder
@@ -52,8 +52,9 @@ handlers =
 
 
 notFound =
-    { encode = encodeNotFound
-    , toUrl = notFoundToUrl
+    { toUrl = notFoundToUrl
+    , urlParser = notFoundUrlParser
+    , encode = encodeNotFound
     }
 
 
@@ -225,47 +226,85 @@ toString route =
             handlers.incSpecialAttr.toUrl attr
 
 
+{-| This is done instead of a simple `Url.Parser.oneOf [a,b,c,d,...]` so that
+we get alerted by the typesystem to add a case.
+
+<https://discourse.elm-lang.org/t/typesafe-url-parser-oneof-usage/1964/4>
+
+-}
 parser : Parser (Route -> a) a
 parser =
-    Url.Parser.oneOf
-        [ handlers.signup.urlParser
-        , handlers.login.urlParser
-        , handlers.refresh.urlParser
-        , handlers.logout.urlParser
-        , handlers.refreshAnonymous.urlParser
-        , handlers.attack.urlParser
-        , handlers.incSpecialAttr.urlParser
-        ]
+    let
+        nextRoute : Route -> Maybe Route
+        nextRoute r =
+            case r of
+                NotFound ->
+                    Just Signup
 
+                Signup ->
+                    Just Refresh
 
-{-| This is only here to make sure I don't forget to add the new route's parser.
--}
-parserFailsafe : Route -> String
-parserFailsafe route =
-    case route of
-        NotFound ->
-            "yes I have added the new parser to `parser` above"
+                Refresh ->
+                    Just RefreshAnonymous
 
-        Signup ->
-            "yes I have added the new parser to `parser` above"
+                RefreshAnonymous ->
+                    Just Login
 
-        Refresh ->
-            "yes I have added the new parser to `parser` above"
+                Login ->
+                    Just (Attack "")
 
-        RefreshAnonymous ->
-            "yes I have added the new parser to `parser` above"
+                Attack _ ->
+                    Just Logout
 
-        Login ->
-            "yes I have added the new parser to `parser` above"
+                Logout ->
+                    Just (IncSpecialAttr Strength)
 
-        Attack _ ->
-            "yes I have added the new parser to `parser` above"
+                IncSpecialAttr _ ->
+                    {- Connect the new route correctly:
+                       `a -> Nothing` becomes `a -> Just b; b -> Nothing`
+                    -}
+                    Nothing
 
-        Logout ->
-            "yes I have added the new parser to `parser` above"
+        makeAllRoutes : Maybe Route -> List Route
+        makeAllRoutes maybeRoute =
+            maybeRoute
+                |> Maybe.map (\r -> r :: makeAllRoutes (nextRoute r))
+                |> Maybe.withDefault []
 
-        IncSpecialAttr _ ->
-            "yes I have added the new parser to `parser` above"
+        allRoutes : List Route
+        allRoutes =
+            makeAllRoutes (Just NotFound)
+
+        routeToParser : Route -> Parser (Route -> a) a
+        routeToParser r =
+            case r of
+                NotFound ->
+                    handlers.notFound.urlParser
+
+                Signup ->
+                    handlers.signup.urlParser
+
+                Refresh ->
+                    handlers.refresh.urlParser
+
+                RefreshAnonymous ->
+                    handlers.refreshAnonymous.urlParser
+
+                Login ->
+                    handlers.login.urlParser
+
+                Attack _ ->
+                    handlers.attack.urlParser
+
+                Logout ->
+                    handlers.logout.urlParser
+
+                IncSpecialAttr _ ->
+                    handlers.incSpecialAttr.urlParser
+    in
+    allRoutes
+        |> List.map routeToParser
+        |> Url.Parser.oneOf
 
 
 
@@ -325,6 +364,12 @@ authErrorFromString string =
 
 
 -- NOT FOUND
+
+
+notFoundUrlParser : Parser (Route -> a) a
+notFoundUrlParser =
+    Url.Parser.map NotFound
+        (Url.Parser.s "404")
 
 
 encodeNotFound : String -> JE.Value
