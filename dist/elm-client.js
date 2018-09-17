@@ -6934,8 +6934,8 @@ var author$project$Client$User$emptyForm = {
 	ai: '',
 	ak: author$project$Shared$Password$password('')
 };
-var krisajenkins$remotedata$RemoteData$NotAsked = {$: 0};
-var author$project$Client$User$init = A2(author$project$Client$User$Anonymous, krisajenkins$remotedata$RemoteData$NotAsked, author$project$Client$User$emptyForm);
+var krisajenkins$remotedata$RemoteData$Loading = {$: 1};
+var author$project$Client$User$init = A2(author$project$Client$User$Anonymous, krisajenkins$remotedata$RemoteData$Loading, author$project$Client$User$emptyForm);
 var author$project$Client$Main$init = F3(
 	function (_n0, url, key) {
 		var serverEndpoint = _n0.M;
@@ -8026,7 +8026,7 @@ var author$project$Client$User$getAuthFromUser = function (user) {
 var author$project$Client$Main$getAuthFromUser = function (model) {
 	return author$project$Client$User$getAuthFromUser(model.F);
 };
-var krisajenkins$remotedata$RemoteData$Loading = {$: 1};
+var krisajenkins$remotedata$RemoteData$NotAsked = {$: 0};
 var krisajenkins$remotedata$RemoteData$map = F2(
 	function (f, data) {
 		switch (data.$) {
@@ -9183,7 +9183,7 @@ var author$project$Client$User$viewPlayers = function (_n0) {
 var author$project$Client$User$viewAnonymousWorld = function (world) {
 	switch (world.$) {
 		case 0:
-			return elm$html$Html$text('Eh, the game should probably ask the server for the world data - oops. Can you ping @janiczek?');
+			return elm$html$Html$text('');
 		case 1:
 			return elm$html$Html$text('Loading');
 		case 2:
