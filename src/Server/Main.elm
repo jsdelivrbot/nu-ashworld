@@ -203,7 +203,7 @@ handleHealTick timeOfTick model =
     )
 
 
-getMessageQueue : String -> Model -> ( List String, Model )
+getMessageQueue : String -> Model -> ( Model, List String )
 getMessageQueue name model =
     let
         queue : List String
@@ -222,7 +222,7 @@ getMessageQueue name model =
             model
                 |> setWorld newWorld
     in
-    ( queue, newModel )
+    ( newModel, queue )
 
 
 handleNotFound : String -> JE.Value -> Model -> ( Model, Cmd Msg )
@@ -262,7 +262,7 @@ handleSignup maybeAuth response model =
                                 |> addPlayer newPlayer
                                 |> updateWorld (Server.World.addPlayerMessage name welcomeMessage)
 
-                        ( messageQueue, newModel ) =
+                        ( newModel, messageQueue ) =
                             getMessageQueue name modelWithPlayer
                     in
                     ( newModel
@@ -298,7 +298,7 @@ handleLogin maybeAuth response model =
             (\auth ->
                 if Shared.Password.checksOut auth model.world.players then
                     let
-                        ( messageQueue, newModel ) =
+                        ( newModel, messageQueue ) =
                             getMessageQueue auth.name model
                     in
                     ( newModel
@@ -336,7 +336,7 @@ handleRefresh maybeAuth response model =
             (\auth ->
                 if Shared.Password.checksOut auth model.world.players then
                     let
-                        ( messageQueue, newModel ) =
+                        ( newModel, messageQueue ) =
                             getMessageQueue auth.name model
                     in
                     ( newModel
@@ -401,9 +401,6 @@ handleIncSpecialAttr maybeAuth attr response model =
         |> Maybe.map
             (\auth ->
                 let
-                    ( messageQueue, modelWithoutMessages ) =
-                        getMessageQueue auth.name model
-
                     maybePlayer : Maybe ServerPlayer
                     maybePlayer =
                         model.world.players
@@ -414,19 +411,34 @@ handleIncSpecialAttr maybeAuth attr response model =
                             |> Maybe.map
                                 (\player ->
                                     if player.availableSpecial == 0 then
-                                        ( modelWithoutMessages
+                                        let
+                                            ( newModel_, messageQueue ) =
+                                                getMessageQueue auth.name model
+                                        in
+                                        ( newModel_
                                         , messageQueue ++ [ "You have no SPECIAL points left to redistribute!" ]
                                         )
                                     else
-                                        ( model
-                                            |> updateWorld (Server.World.incSpecialAttr attr player.availableSpecial auth.name)
-                                        , messageQueue ++ [ "You have successfully upgraded your " ++ Shared.Special.label attr ]
+                                        let
+                                            modelAfterInc =
+                                                updateWorld
+                                                    (Server.World.incSpecialAttr attr player.availableSpecial auth.name)
+                                                    model
+
+                                            ( newModel_, messageQueue ) =
+                                                getMessageQueue auth.name modelAfterInc
+
+                                            message =
+                                                if newModel_ == model then
+                                                    "You can't add any more points to " ++ Shared.Special.label attr
+                                                else
+                                                    "You have successfully upgraded your " ++ Shared.Special.label attr
+                                        in
+                                        ( newModel_
+                                        , messageQueue ++ [ message ]
                                         )
                                 )
-                            |> Maybe.withDefault
-                                ( modelWithoutMessages
-                                , messageQueue
-                                )
+                            |> Maybe.withDefault (getMessageQueue auth.name model)
                 in
                 ( newModel
                 , sendHttpResponse response
@@ -446,7 +458,7 @@ handleIncSpecialAttr maybeAuth attr response model =
 handleAttackYouDead : String -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleAttackYouDead you response model =
     let
-        ( messageQueue, modelWithoutMessages ) =
+        ( modelWithoutMessages, messageQueue ) =
             getMessageQueue you model
 
         newMessageQueue : List String
@@ -465,7 +477,7 @@ handleAttackYouDead you response model =
 handleAttackThemDead : String -> String -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleAttackThemDead you them response model =
     let
-        ( messageQueue, modelWithoutMessages ) =
+        ( modelWithoutMessages, messageQueue ) =
             getMessageQueue you model
 
         newMessageQueue : List String
@@ -575,7 +587,7 @@ handleAttackWithGeneratedFight { you, them, fight, response } model =
             model
                 |> setWorld newWorld
 
-        ( messageQueue, newModel ) =
+        ( newModel, messageQueue ) =
             getMessageQueue you modelAfterFight
     in
     ( newModel

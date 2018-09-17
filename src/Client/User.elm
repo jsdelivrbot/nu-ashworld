@@ -415,11 +415,16 @@ viewPlayer c player =
     let
         viewSpecialAttr : SpecialAttr -> Html msg
         viewSpecialAttr attr =
+            let
+                current : Int
+                current =
+                    Shared.Special.getter attr player.special
+            in
             H.tr []
                 [ H.th [] [ H.text (Shared.Special.label attr) ]
-                , H.td [] [ H.text (player.special |> Shared.Special.getter attr |> String.fromInt) ]
+                , H.td [] [ H.text (String.fromInt current) ]
                 , H.td []
-                    (if player.availableSpecial > 0 then
+                    (if player.availableSpecial > 0 && current < 10 then
                         [ H.button
                             [ onClickRequest c (IncSpecialAttr attr) ]
                             [ H.text "+" ]
