@@ -159,7 +159,7 @@ sum s =
 
 inc : SpecialAttr -> Int -> Special -> ( Int, Special )
 inc attr available special =
-    if available >= 0 then
+    if available > 0 && getter attr special < 10 then
         ( available - 1
         , case attr of
             Strength ->
