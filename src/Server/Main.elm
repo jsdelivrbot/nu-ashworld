@@ -6,6 +6,7 @@ import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE
 import Platform
 import Random exposing (Generator)
+import Server.Fight
 import Server.Route as Route exposing (AuthError(..), Route(..), SignupError(..))
 import Server.World
 import Shared.Fight exposing (Fight(..))
@@ -522,28 +523,8 @@ fightDataGenerator you them response model =
     Random.map4 FightData
         (Random.constant you)
         (Random.constant them)
-        (fightGenerator yourSpecial theirSpecial)
+        (Server.Fight.generator yourSpecial theirSpecial)
         (Random.constant response)
-
-
-fightGenerator : Maybe Special -> Maybe Special -> Generator Fight
-fightGenerator you them =
-    let
-        gen_ : Special -> Special -> Generator Fight
-        gen_ you_ them_ =
-            -- TODO this is currently very stupid
-            Random.weighted
-                ( toFloat (Shared.Special.sum you_), YouWon )
-                [ ( toFloat (Shared.Special.sum them_), YouLost ) ]
-
-        fallback : Generator Fight
-        fallback =
-            Random.uniform
-                YouWon
-                [ YouLost ]
-    in
-    Maybe.map2 gen_ you them
-        |> Maybe.withDefault fallback
 
 
 getSpecial : String -> Model -> Maybe Special
