@@ -8899,6 +8899,7 @@ var elm$html$Html$Attributes$colspan = function (n) {
 var author$project$Client$User$viewPlayer = F2(
 	function (c, player) {
 		var viewSpecialAttr = function (attr) {
+			var current = A2(author$project$Shared$Special$getter, attr, player.bN);
 			return A2(
 				elm$html$Html$tr,
 				_List_Nil,
@@ -8918,13 +8919,12 @@ var author$project$Client$User$viewPlayer = F2(
 						_List_fromArray(
 							[
 								elm$html$Html$text(
-								elm$core$String$fromInt(
-									A2(author$project$Shared$Special$getter, attr, player.bN)))
+								elm$core$String$fromInt(current))
 							])),
 						A2(
 						elm$html$Html$td,
 						_List_Nil,
-						(player.aC > 0) ? _List_fromArray(
+						((player.aC > 0) && (current < 10)) ? _List_fromArray(
 							[
 								A2(
 								elm$html$Html$button,
