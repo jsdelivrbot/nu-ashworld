@@ -260,6 +260,9 @@ parser =
                     Just (IncSpecialAttr Strength)
 
                 IncSpecialAttr _ ->
+                    {- Connect the new route correctly:
+                       `a -> Nothing` becomes `a -> Just b; b -> Nothing`
+                    -}
                     Nothing
 
         makeAllRoutes : Maybe Route -> List Route
