@@ -85,7 +85,7 @@ emptyForm =
 
 init : User
 init =
-    Anonymous NotAsked emptyForm
+    Anonymous Loading emptyForm
 
 
 loggedIn : String -> Password Plaintext -> ClientWorld -> List String -> User
@@ -338,7 +338,7 @@ viewAnonymousWorld : WebData AnonymousClientWorld -> Html msg
 viewAnonymousWorld world =
     case world of
         NotAsked ->
-            H.text "Eh, the game should probably ask the server for the world data - oops. Can you ping @janiczek?"
+            H.text ""
 
         Loading ->
             H.text "Loading"
