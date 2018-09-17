@@ -5,6 +5,7 @@ module Server.World
         , addPlayerXp
         , emptyPlayerMessageQueue
         , healEverybody
+        , incSpecialAttr
         , isDead
         , setPlayerHp
         )
@@ -12,6 +13,7 @@ module Server.World
 import Dict
 import Shared.Level
 import Shared.Player exposing (ServerPlayer)
+import Shared.Special exposing (SpecialAttr)
 import Shared.World exposing (ServerWorld)
 
 
@@ -79,6 +81,22 @@ healEverybody : ServerWorld -> ServerWorld
 healEverybody world =
     world
         |> map (\_ player -> { player | hp = min (player.hp + 1) player.maxHp })
+
+
+incSpecialAttr : SpecialAttr -> Int -> String -> ServerWorld -> ServerWorld
+incSpecialAttr attr available name world =
+    world
+        |> map
+            (\_ player ->
+                let
+                    ( newAvailable, newSpecial ) =
+                        Shared.Special.inc attr available player.special
+                in
+                { player
+                    | special = newSpecial
+                    , availableSpecial = newAvailable
+                }
+            )
 
 
 
