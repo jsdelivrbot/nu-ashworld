@@ -432,6 +432,11 @@ viewPlayer c player =
                      else
                         []
                     )
+                , H.td []
+                    [ Shared.Special.hint attr
+                        |> Maybe.withDefault ""
+                        |> H.text
+                    ]
                 ]
     in
     H.table []
@@ -439,15 +444,18 @@ viewPlayer c player =
             [ H.td [] []
             , H.th [] [ H.text "PLAYER STATS" ]
             , H.td [] []
+            , H.td [] []
             ]
         , H.tr []
             [ H.th [] [ H.text "Name" ]
             , H.td [] [ H.text player.name ]
             , H.td [] []
+            , H.td [] []
             ]
         , H.tr []
             [ H.th [] [ H.text "HP" ]
             , H.td [] [ H.text (String.fromInt player.hp ++ "/" ++ String.fromInt player.maxHp) ]
+            , H.td [] []
             , H.td [] []
             ]
         , H.tr []
@@ -461,10 +469,12 @@ viewPlayer c player =
                         ++ String.fromInt (Shared.Level.xpToNextLevel player.xp)
                         ++ " till the next level)"
                 ]
+            , H.td [] []
             ]
         , H.tr []
-            [ H.td [] []
-            , H.th [ HA.colspan 2 ] [ H.text ("SPECIAL (" ++ String.fromInt player.availableSpecial ++ " pts available)") ]
+            [ H.th [ HA.colspan 2 ] [ H.text ("SPECIAL (" ++ String.fromInt player.availableSpecial ++ " pts available)") ]
+            , H.td [] []
+            , H.td [] []
             ]
         , viewSpecialAttr Strength
         , viewSpecialAttr Perception

@@ -6,6 +6,7 @@ module Shared.Special
         , decoder
         , encode
         , getter
+        , hint
         , inc
         , init
         , initAvailable
@@ -26,6 +27,17 @@ type SpecialAttr
     | Intelligence
     | Agility
     | Luck
+
+
+type alias Special =
+    { strength : Int
+    , perception : Int
+    , endurance : Int
+    , charisma : Int
+    , intelligence : Int
+    , agility : Int
+    , luck : Int
+    }
 
 
 urlParser : Parser (SpecialAttr -> a) a
@@ -91,15 +103,29 @@ getter attr =
             .luck
 
 
-type alias Special =
-    { strength : Int
-    , perception : Int
-    , endurance : Int
-    , charisma : Int
-    , intelligence : Int
-    , agility : Int
-    , luck : Int
-    }
+hint : SpecialAttr -> Maybe String
+hint attr =
+    case attr of
+        Strength ->
+            Just "Does nothing now, but will determine HP in the future"
+
+        Perception ->
+            Nothing
+
+        Endurance ->
+            Just "Does nothing now, but will determine HP in the future"
+
+        Charisma ->
+            Nothing
+
+        Intelligence ->
+            Nothing
+
+        Agility ->
+            Just "The most important skill right now - determines your AP, which in turn determines the amount of punches you can give each turn in a fight."
+
+        Luck ->
+            Nothing
 
 
 decoder : Decoder Special

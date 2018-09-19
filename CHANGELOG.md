@@ -2,6 +2,7 @@
 
 - [x] XP per fight is determined by the player HP (multiplier?)
 - [x] Fight result is not "You won / You lost" but the final HP etc.
+- [x] Show players AP (when fiddling with SPECIAL?) and what it means (1/2/3 punches per fight turn)
 
 # 0.1.0 - 2018/09/20
 
