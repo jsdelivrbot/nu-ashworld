@@ -17,11 +17,12 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 - [ ] Loading screens keep the previous data, there's just a spinner or something
 - [ ] Anti-spam measures for the signup form
 - [ ] Ticks, capped, once per ... what, an hour? (ENV flag to make it go faster for debug/testing purposes?)
+- [ ] HP [is determined by](http://fallout.wikia.com/wiki/Hit_Points#Fallout_and_Fallout_2) level + strength + endurance
 - [ ] Visibility of some "next tick in/at ..." information
 - [ ] Design (that Adminator bootstrap template looks nice, but it's 1MB, blah. Do it myself? And in black/green FO2 theme? And with FO2 fonts? YESSS)
 - [ ] Move to full-fledged SQL before the current style gets unwieldy
 - [ ] Migrations between DB states
-- [ ] HP [is determined by](http://fallout.wikia.com/wiki/Hit_Points#Fallout_and_Fallout_2) level + strength + endurance
+- [ ] Send deltas instead of full world states
 - [ ] Skills
 - [ ] Skills influence fight (and SPECIAL influences it too, a bit more than it does currently)
 - [ ] Timestamps in the messages
