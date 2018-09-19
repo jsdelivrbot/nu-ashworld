@@ -9,7 +9,7 @@ import Random exposing (Generator)
 import Server.Fight
 import Server.Route as Route exposing (AuthError(..), Route(..), SignupError(..))
 import Server.World
-import Shared.Fight exposing (Fight(..))
+import Shared.Fight exposing (Fight, FightResult(..))
 import Shared.Password exposing (Auth, Hashed)
 import Shared.Player exposing (ServerPlayer)
 import Shared.Special exposing (Special, SpecialAttr)
@@ -73,7 +73,7 @@ type Msg
     = HealTick Posix
     | HttpRequest HttpRequestData
     | HttpRequestError JD.Error
-    | GeneratedFight FightData
+    | GeneratedFight ( JE.Value, Maybe FightData )
 
 
 type alias HttpRequestData =
@@ -166,8 +166,8 @@ update msg model =
         HealTick timeOfTick ->
             handleHealTick timeOfTick model
 
-        GeneratedFight fightData ->
-            handleAttackWithGeneratedFight fightData model
+        GeneratedFight data ->
+            handleAttackWithGeneratedFight data model
 
 
 authHeaders : Dict String String -> Maybe (Auth Hashed)
@@ -497,7 +497,9 @@ handleAttackThemDead you them response model =
 handleAttackNobodyDead : String -> String -> JE.Value -> Model -> ( Model, Cmd Msg )
 handleAttackNobodyDead you them response model =
     ( model
-    , Random.generate GeneratedFight (fightDataGenerator you them response model)
+    , Random.generate
+        (\fight -> GeneratedFight ( response, fight ))
+        (fightDataGenerator you them model)
     )
 
 
@@ -505,79 +507,86 @@ type alias FightData =
     { you : String
     , them : String
     , fight : Fight
-    , response : JE.Value
     }
 
 
-fightDataGenerator : String -> String -> JE.Value -> Model -> Generator FightData
-fightDataGenerator you them response model =
+fightDataGenerator : String -> String -> Model -> Generator (Maybe FightData)
+fightDataGenerator yourName theirName model =
     let
-        yourSpecial : Maybe Special
-        yourSpecial =
-            getSpecial you model
+        you_ : Maybe ServerPlayer
+        you_ =
+            Dict.get yourName model.world.players
 
-        theirSpecial : Maybe Special
-        theirSpecial =
-            getSpecial them model
+        them_ : Maybe ServerPlayer
+        them_ =
+            Dict.get theirName model.world.players
     in
-    Random.map4 FightData
-        (Random.constant you)
-        (Random.constant them)
-        (Server.Fight.generator yourSpecial theirSpecial)
-        (Random.constant response)
-
-
-getSpecial : String -> Model -> Maybe Special
-getSpecial name model =
-    model.world.players
-        |> Dict.get name
-        |> Maybe.map .special
-
-
-handleAttackWithGeneratedFight : FightData -> Model -> ( Model, Cmd Msg )
-handleAttackWithGeneratedFight { you, them, fight, response } model =
-    let
-        newWorld : ServerWorld
-        newWorld =
-            case fight of
-                YouWon ->
-                    model.world
-                        |> Server.World.addPlayerMessages you
-                            [ "With your admin powers, you one-shot the other player. This is boring."
-                            , "The other player dies."
-                            , "You won!"
-                            ]
-                        |> Server.World.addPlayerMessage them
-                            ("Player " ++ you ++ " fought you and killed you!")
-                        |> Server.World.setPlayerHp them 0
-                        |> Server.World.addPlayerXp you 10
-
-                YouLost ->
-                    model.world
-                        |> Server.World.addPlayerMessages you
-                            [ "Even though you tried your best, you couldn't kill the other player."
-                            , "You die!"
-                            ]
-                        |> Server.World.addPlayerMessage them
-                            ("Player " ++ you ++ " fought you but you managed to kill them!")
-                        |> Server.World.setPlayerHp you 0
-                        |> Server.World.addPlayerXp them 5
-
-        modelAfterFight : Model
-        modelAfterFight =
-            model
-                |> setWorld newWorld
-
-        ( newModel, messageQueue ) =
-            getMessageQueue you modelAfterFight
-    in
-    ( newModel
-    , sendHttpResponse response
-        (Route.handlers.attack.response messageQueue you newModel.world (Just fight)
-            |> Maybe.map Route.handlers.attack.encode
-            |> Maybe.withDefault (Route.handlers.attack.encodeError NameNotFound)
+    Maybe.map2
+        (\you them ->
+            Random.map
+                (\fight -> Just (FightData yourName theirName fight))
+                (Server.Fight.generator you them)
         )
-    )
+        you_
+        them_
+        |> Maybe.withDefault (Random.constant Nothing)
+
+
+handleAttackWithGeneratedFight : ( JE.Value, Maybe FightData ) -> Model -> ( Model, Cmd Msg )
+handleAttackWithGeneratedFight ( response, maybeFightData ) model =
+    maybeFightData
+        |> Maybe.map
+            (\{ you, them, fight } ->
+                let
+                    worldWithFightLogs : ServerWorld
+                    worldWithFightLogs =
+                        model.world
+                            |> Server.World.addPlayerMessages you
+                                (("You attacked " ++ them ++ "!")
+                                    :: List.map
+                                        (Shared.Fight.eventToString { you = you, them = them })
+                                        fight.log
+                                )
+                            |> Server.World.addPlayerMessages them
+                                ((you ++ " attacked you!")
+                                    :: List.map
+                                        (Shared.Fight.switchPerspective >> Shared.Fight.eventToString { you = them, them = you })
+                                        fight.log
+                                )
+
+                    newWorld : ServerWorld
+                    newWorld =
+                        case fight.result of
+                            YouWon ->
+                                worldWithFightLogs
+                                    |> Server.World.setPlayerHp them 0
+                                    |> Server.World.addPlayerXp you 10
+
+                            YouLost ->
+                                worldWithFightLogs
+                                    |> Server.World.setPlayerHp you 0
+                                    |> Server.World.addPlayerXp them 5
+
+                    modelAfterFight : Model
+                    modelAfterFight =
+                        model
+                            |> setWorld newWorld
+
+                    ( newModel, messageQueue ) =
+                        getMessageQueue you modelAfterFight
+                in
+                ( newModel
+                , sendHttpResponse response
+                    (Route.handlers.attack.response messageQueue you newModel.world (Just fight)
+                        |> Maybe.map Route.handlers.attack.encode
+                        |> Maybe.withDefault (Route.handlers.attack.encodeError NameNotFound)
+                    )
+                )
+            )
+        |> Maybe.withDefault
+            ( model
+            , sendHttpResponse response (Route.handlers.attack.encodeError NameNotFound)
+            )
 
 
 setWorld : ServerWorld -> Model -> Model
