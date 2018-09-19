@@ -11,6 +11,7 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 
 > Roughly in the order of "I'd like to do this the most", `DESC`.
 
+- [ ] Truncate game messages to 50 last messages or "what's new" (if that's >50)
 - [ ] Game logs (API requests) saved to SQL
 - [ ] Loading screens keep the previous data, there's just a spinner or something
 - [ ] Anti-spam measures for the signup form
