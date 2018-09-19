@@ -35,17 +35,5 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 
 ## Done:
 
-> In chronological order (newest at the bottom).
+See [CHANGELOG.md](https://github.com/Janiczek/nu-ashworld/blob/master/CHANGELOG.md)
 
-- [x] Only fight when you have some HP
-- [x] Time-based HP regeneration
-- [x] Investigate and fix the race condition for multiple HTTP responses of the server. (IDs?)
-- [x] Levels
-- [x] Level up messages
-- [x] Persistence
-- [x] Actual authentication and security
-- [x] Logout
-- [x] See list of players even when not logged in
-- [x] Randomized fight
-- [x] SPECIAL stat system
-- [x] SPECIAL stat system influences the fight (a bit)
