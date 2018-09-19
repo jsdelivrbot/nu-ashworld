@@ -11,23 +11,26 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 
 > Roughly in the order of "I'd like to do this the most", `DESC`.
 
+- [ ] XP per fight is determined by the player HP (multiplier?)
+- [ ] Fight result is not "You won / You lost" but the final HP etc.
 - [ ] HP [is determined by](http://fallout.wikia.com/wiki/Hit_Points#Fallout_and_Fallout_2) level + strength + endurance
 - [ ] Anti-spam measures for the signup form
 - [ ] Ticks, capped, once per ... what, an hour? (ENV flag to make it go faster for debug/testing purposes?)
+- [ ] Loading screens keep the previous data, there's just a spinner or something
 - [ ] Timestamps in the messages
-- [ ] Visibility of some "next tick in/at ..." information
 - [ ] Skills
 - [ ] Skills influence fight (and SPECIAL influences it too, a bit more than it does currently)
-- [ ] FO2 Map
 - [ ] Move to full-fledged SQL before the current style gets unwieldy
-- [ ] Inventory
-- [ ] Gathering system? Do we want to be that kind of game? Or more like "kill everything in random encounters and take the loot"?
-- [ ] SPECIAL stat system influences the fight (a bit)
-- [ ] NPC shops
-- [ ] Player auction house / market / Grand Exchange / whatever you want to call it
+- [ ] Migrations between DB states
 - [ ] Think about putting some "you've healed" msg to players' queues on each Heal tick
 - [ ] Design (that Adminator bootstrap template looks nice, but it's 1MB, blah. Do it myself? And in black/green FO2 theme? And with FO2 fonts? YESSS)
-- [ ] Investigate bidirectional websockets in 0.19 ([somebody did it like this](https://github.com/danneu/elm-mmo))
+- [ ] Visibility of some "next tick in/at ..." information
+- [ ] FO2 Map
+- [ ] Inventory
+- [ ] Gathering system? Do we want to be that kind of game? Or more like "kill everything in random encounters and take the loot"?
+- [ ] NPC shops
+- [ ] Player auction house / market / Grand Exchange / whatever you want to call it
+- [ ] Investigate bidirectional websockets in Elm 0.19 ([somebody did it like this](https://github.com/danneu/elm-mmo))
 
 ## Done:
 
