@@ -20,16 +20,14 @@ import Json.Encode as JE
 type alias Fight =
     { log : List Event
     , result : FightResult
+    , xpGained : Int
+    , finalHp : Hp
     }
 
 
 type Entity
     = You
     | Them
-
-
-type alias ApCount =
-    Int
 
 
 type alias Hp =
@@ -74,9 +72,11 @@ resultDecoder =
 
 decoder : Decoder Fight
 decoder =
-    JD.map2 Fight
+    JD.map4 Fight
         (JD.field "log" (JD.list eventDecoder))
         (JD.field "result" resultDecoder)
+        (JD.field "xp-gained" JD.int)
+        (JD.field "final-hp" JD.int)
 
 
 eventDecoder : Decoder Event
@@ -139,10 +139,12 @@ encodeResult result =
 
 
 encode : Fight -> JE.Value
-encode { log, result } =
+encode { log, result, xpGained, finalHp } =
     JE.object
         [ ( "log", JE.list encodeEvent log )
         , ( "result", encodeResult result )
+        , ( "xp-gained", JE.int xpGained )
+        , ( "final-hp", JE.int finalHp )
         ]
 
 

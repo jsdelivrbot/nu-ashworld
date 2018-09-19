@@ -11,9 +11,7 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 
 > Roughly in the order of "I'd like to do this the most", `DESC`.
 
-- [ ] XP per fight is determined by the player HP (multiplier?)
 - [ ] Game logs (API requests) saved to SQL
-- [ ] Fight result is not "You won / You lost" but the final HP etc.
 - [ ] Loading screens keep the previous data, there's just a spinner or something
 - [ ] Anti-spam measures for the signup form
 - [ ] Ticks, capped, once per ... what, an hour? (ENV flag to make it go faster for debug/testing purposes?)

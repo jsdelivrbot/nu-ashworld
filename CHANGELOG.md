@@ -1,3 +1,8 @@
+# 0.1.1 - 2018/09/20
+
+- [x] XP per fight is determined by the player HP (multiplier?)
+- [x] Fight result is not "You won / You lost" but the final HP etc.
+
 # 0.1.0 - 2018/09/20
 
 - [x] Only fight when you have some HP

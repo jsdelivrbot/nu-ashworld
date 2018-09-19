@@ -560,12 +560,14 @@ handleAttackWithGeneratedFight ( response, maybeFightData ) model =
                             YouWon ->
                                 worldWithFightLogs
                                     |> Server.World.setPlayerHp them 0
-                                    |> Server.World.addPlayerXp you 10
+                                    |> Server.World.setPlayerHp you fight.finalHp
+                                    |> Server.World.addPlayerXp you fight.xpGained
 
                             YouLost ->
                                 worldWithFightLogs
                                     |> Server.World.setPlayerHp you 0
-                                    |> Server.World.addPlayerXp them 5
+                                    |> Server.World.setPlayerHp them fight.finalHp
+                                    |> Server.World.addPlayerXp them fight.xpGained
 
                     modelAfterFight : Model
                     modelAfterFight =
