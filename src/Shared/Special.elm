@@ -128,15 +128,17 @@ encode special =
         ]
 
 
+{-| <http://fallout.wikia.com/wiki/Primary_statistic#Minimum_and_maximum>
+-}
 init : Special
 init =
-    { strength = 0
-    , perception = 0
-    , endurance = 0
-    , charisma = 0
-    , intelligence = 0
-    , agility = 0
-    , luck = 0
+    { strength = 1
+    , perception = 1
+    , endurance = 1
+    , charisma = 1
+    , intelligence = 1
+    , agility = 1
+    , luck = 1
     }
 
 
