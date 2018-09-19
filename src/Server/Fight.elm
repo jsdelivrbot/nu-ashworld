@@ -18,7 +18,7 @@ type alias FightEntity =
     , apPerTurn : Int
     , special : Special
     , hp : Int
-    , maxHp : Int
+    , initialHp : Int
     }
 
 
@@ -37,14 +37,14 @@ generator you them =
         , special = you.special
         , hp = you.hp
         , apPerTurn = Shared.Special.ap you.special
-        , maxHp = you.maxHp
+        , initialHp = you.hp
         }
     , them =
         { ap = 0
         , special = them.special
         , hp = them.hp
         , apPerTurn = Shared.Special.ap them.special
-        , maxHp = them.maxHp
+        , initialHp = them.hp
         }
     , turn = You
     , log = [ TurnStarted You ]
@@ -60,14 +60,14 @@ restOfFightGenerator f =
             { log = f.log ++ [ Die You ]
             , result = YouLost
             , finalHp = f.them.hp
-            , xpGained = f.you.maxHp * hpXpMultiplier // defenderXpPenalty
+            , xpGained = f.you.initialHp * hpXpMultiplier // defenderXpPenalty
             }
     else if f.them.hp <= 0 then
         Random.constant
             { log = f.log ++ [ Die Them ]
             , result = YouWon
             , finalHp = f.you.hp
-            , xpGained = f.them.maxHp * hpXpMultiplier
+            , xpGained = f.them.initialHp * hpXpMultiplier
             }
     else
         eventGenerator f
