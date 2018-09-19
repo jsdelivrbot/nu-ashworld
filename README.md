@@ -11,14 +11,17 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 
 > Roughly in the order of "I'd like to do this the most", `DESC`.
 
-- [ ] SPECIAL stat system influences the fight
-- [ ] Action points, capped, once per ... what, an hour? (ENV flag to make it go faster for debug/testing purposes?)
+- [ ] Anti-spam measures for the signup form
+- [ ] Ticks, capped, once per ... what, an hour? (ENV flag to make it go faster for debug/testing purposes?)
 - [ ] Timestamps in the messages
 - [ ] Visibility of some "next tick in/at ..." information
+- [ ] Skills
+- [ ] Skills influence fight (and SPECIAL influences it too, a bit more than it does currently)
 - [ ] FO2 Map
 - [ ] Move to full-fledged SQL before the current style gets unwieldy
 - [ ] Inventory
 - [ ] Gathering system? Do we want to be that kind of game? Or more like "kill everything in random encounters and take the loot"?
+- [ ] SPECIAL stat system influences the fight (a bit)
 - [ ] NPC shops
 - [ ] Player auction house / market / Grand Exchange / whatever you want to call it
 - [ ] Think about putting some "you've healed" msg to players' queues on each Heal tick
@@ -27,7 +30,7 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 
 ## Done:
 
-> In chronological order.
+> In chronological order (newest at the bottom).
 
 - [x] Only fight when you have some HP
 - [x] Time-based HP regeneration
@@ -40,3 +43,4 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 - [x] See list of players even when not logged in
 - [x] Randomized fight
 - [x] SPECIAL stat system
+- [x] SPECIAL stat system influences the fight (a bit)

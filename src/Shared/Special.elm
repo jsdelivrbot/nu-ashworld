@@ -2,6 +2,7 @@ module Shared.Special
     exposing
         ( Special
         , SpecialAttr(..)
+        , ap
         , decoder
         , encode
         , getter
@@ -155,6 +156,13 @@ sum s =
         + s.intelligence
         + s.agility
         + s.luck
+
+
+{-| <http://fallout.wikia.com/wiki/Action_Points#Fallout.2C_Fallout_2_and_Fallout_Tactics>
+-}
+ap : Special -> Int
+ap { agility } =
+    5 + (agility // 2)
 
 
 inc : SpecialAttr -> Int -> Special -> ( Int, Special )

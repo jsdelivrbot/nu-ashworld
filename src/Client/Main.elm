@@ -25,7 +25,7 @@ import Server.Route as Route
         , SignupResponse
         , toString
         )
-import Shared.Fight exposing (Fight(..))
+import Shared.Fight exposing (Fight)
 import Shared.Level
 import Shared.MessageQueue
 import Shared.Password exposing (Auth, Hashed, Password, Plaintext)
