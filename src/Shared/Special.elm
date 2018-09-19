@@ -10,7 +10,6 @@ module Shared.Special
         , init
         , initAvailable
         , label
-        , sum
         , urlParser
         )
 
@@ -143,21 +142,13 @@ init =
 
 
 {-| <http://fallout.wikia.com/wiki/Fallout_2_primary_statistics#Overview>
+
+Total 40 at the start, minus 1 for each stat (stats can't go below 1) = 40 - 7 = 33
+
 -}
 initAvailable : Int
 initAvailable =
-    40
-
-
-sum : Special -> Int
-sum s =
-    s.strength
-        + s.perception
-        + s.endurance
-        + s.charisma
-        + s.intelligence
-        + s.agility
-        + s.luck
+    33
 
 
 {-| <http://fallout.wikia.com/wiki/Action_Points#Fallout.2C_Fallout_2_and_Fallout_Tactics>

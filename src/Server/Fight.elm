@@ -18,6 +18,7 @@ type alias FightEntity =
     , apPerTurn : Int
     , special : Special
     , hp : Int
+    , maxHp : Int
     }
 
 
@@ -36,12 +37,14 @@ generator you them =
         , special = you.special
         , hp = you.hp
         , apPerTurn = Shared.Special.ap you.special
+        , maxHp = you.maxHp
         }
     , them =
         { ap = 0
         , special = them.special
         , hp = them.hp
         , apPerTurn = Shared.Special.ap them.special
+        , maxHp = them.maxHp
         }
     , turn = You
     , log = [ TurnStarted You ]
@@ -52,14 +55,19 @@ generator you them =
 restOfFightGenerator : IntermediateFight -> Generator Fight
 restOfFightGenerator f =
     if f.you.hp <= 0 then
+        -- TODO make entity-agnostic
         Random.constant
             { log = f.log ++ [ Die You ]
             , result = YouLost
+            , finalHp = f.them.hp
+            , xpGained = f.you.maxHp * hpXpMultiplier // defenderXpPenalty
             }
     else if f.them.hp <= 0 then
         Random.constant
             { log = f.log ++ [ Die Them ]
             , result = YouWon
+            , finalHp = f.you.hp
+            , xpGained = f.them.maxHp * hpXpMultiplier
             }
     else
         eventGenerator f
@@ -69,6 +77,23 @@ restOfFightGenerator f =
                         |> update event
                         |> restOfFightGenerator
                 )
+
+
+{-| XP gained for won fight is determined by the other player's max HP.
+10 HP -> 100 XP.
+-}
+hpXpMultiplier : Int
+hpXpMultiplier =
+    10
+
+
+{-| I'm making these rules as I go... But the thing here is:
+if you get attacked and win, you gain XP but less than if you attacked yourself.
+Thus this incentivizes active play and not just waiting? ¯_(ツ)_/¯
+-}
+defenderXpPenalty : Int
+defenderXpPenalty =
+    3
 
 
 update : Event -> IntermediateFight -> IntermediateFight
