@@ -13,18 +13,18 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 
 - [ ] XP per fight is determined by the player HP (multiplier?)
 - [ ] Fight result is not "You won / You lost" but the final HP etc.
-- [ ] HP [is determined by](http://fallout.wikia.com/wiki/Hit_Points#Fallout_and_Fallout_2) level + strength + endurance
+- [ ] Loading screens keep the previous data, there's just a spinner or something
 - [ ] Anti-spam measures for the signup form
 - [ ] Ticks, capped, once per ... what, an hour? (ENV flag to make it go faster for debug/testing purposes?)
-- [ ] Loading screens keep the previous data, there's just a spinner or something
-- [ ] Timestamps in the messages
-- [ ] Skills
-- [ ] Skills influence fight (and SPECIAL influences it too, a bit more than it does currently)
+- [ ] Visibility of some "next tick in/at ..." information
+- [ ] Design (that Adminator bootstrap template looks nice, but it's 1MB, blah. Do it myself? And in black/green FO2 theme? And with FO2 fonts? YESSS)
 - [ ] Move to full-fledged SQL before the current style gets unwieldy
 - [ ] Migrations between DB states
+- [ ] HP [is determined by](http://fallout.wikia.com/wiki/Hit_Points#Fallout_and_Fallout_2) level + strength + endurance
+- [ ] Skills
+- [ ] Skills influence fight (and SPECIAL influences it too, a bit more than it does currently)
+- [ ] Timestamps in the messages
 - [ ] Think about putting some "you've healed" msg to players' queues on each Heal tick
-- [ ] Design (that Adminator bootstrap template looks nice, but it's 1MB, blah. Do it myself? And in black/green FO2 theme? And with FO2 fonts? YESSS)
-- [ ] Visibility of some "next tick in/at ..." information
 - [ ] FO2 Map
 - [ ] Inventory
 - [ ] Gathering system? Do we want to be that kind of game? Or more like "kill everything in random encounters and take the loot"?
