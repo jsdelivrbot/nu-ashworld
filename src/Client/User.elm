@@ -4,6 +4,7 @@ module Client.User
         , Form
         , LoggedInUser
         , User(..)
+        , dropMessages
         , formToAuth
         , getAuthFromForm
         , getAuthFromUser
@@ -17,6 +18,7 @@ module Client.User
         , mapLoggedOffWorld
         , signingUpError
         , transitionFromLoggedOff
+        , truncateMessages
         , unknownError
         , viewLoggedIn
         , viewLoggedOff
@@ -561,3 +563,24 @@ viewOtherPlayerAnonymous { name, hp, xp } =
         , H.td [] [ H.text (String.fromInt hp) ]
         , H.td [] [ H.text (String.fromInt (Shared.Level.levelForXp xp)) ]
         ]
+
+
+dropMessages : LoggedInUser -> LoggedInUser
+dropMessages user =
+    { user | messages = [] }
+
+
+truncateMessages : LoggedInUser -> LoggedInUser
+truncateMessages ({ messages } as user) =
+    let
+        amountToDrop : Int
+        amountToDrop =
+            (List.length messages - messageLimit)
+                |> max 0
+    in
+    { user | messages = List.drop amountToDrop messages }
+
+
+messageLimit : Int
+messageLimit =
+    50

@@ -233,7 +233,7 @@ update msg ({ serverEndpoint } as model) =
                         \response_ ->
                             model
                                 |> updateWorld response_
-                                |> updateMessages response_
+                                |> addMessagesFromResponse response_
                     , err = \_ -> model
                     , default = model
                     }
@@ -247,7 +247,8 @@ update msg ({ serverEndpoint } as model) =
                         \response_ ->
                             model
                                 |> updateWorld response_
-                                |> updateMessages response_
+                                |> updateUser (User.mapLoggedInUser User.dropMessages)
+                                |> addMessagesFromResponse response_
                     , err = \_ -> model
                     , default = model
                     }
@@ -286,7 +287,8 @@ update msg ({ serverEndpoint } as model) =
                         \response_ ->
                             model
                                 |> updateWorld response_
-                                |> updateMessages response_
+                                |> updateUser (User.mapLoggedInUser User.truncateMessages)
+                                |> addMessagesFromResponse response_
                     , err = \_ -> model
                     , default = model
                     }
@@ -372,14 +374,8 @@ updateAnonymousWorld { world } model =
         |> updateUser (User.mapLoggedOffWorld (\_ -> Success world))
 
 
-emptyMessages : Model -> Model
-emptyMessages model =
-    model
-        |> updateUser (User.mapLoggedInUser (\user -> { user | messages = [] }))
-
-
-updateMessages : WithMessageQueue a -> Model -> Model
-updateMessages { messageQueue } model =
+addMessagesFromResponse : WithMessageQueue a -> Model -> Model
+addMessagesFromResponse { messageQueue } model =
     model
         |> updateUser (User.mapLoggedInUser (\user -> { user | messages = user.messages ++ messageQueue }))
 
