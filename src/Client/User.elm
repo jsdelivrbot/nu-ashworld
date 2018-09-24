@@ -555,7 +555,8 @@ viewOtherPlayers c { player, otherPlayers } =
                     , H.th [] [ H.text "Level" ]
                     , H.th [] []
                     ]
-                    :: List.map (viewOtherPlayer c player) otherPlayers
+                    :: List.map (viewOtherPlayer c player)
+                        (List.sortWith playerRanking otherPlayers)
                 )
         ]
 
