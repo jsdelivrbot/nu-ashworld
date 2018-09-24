@@ -506,9 +506,31 @@ viewPlayers { players } =
                     , H.th [] [ H.text "Level" ]
                     , H.th [] []
                     ]
-                    :: List.map viewOtherPlayerAnonymous players
+                    :: List.map viewOtherPlayerAnonymous
+                        (List.sortWith playerRanking players)
                 )
         ]
+
+
+reverseOrder : Order -> Order
+reverseOrder order =
+    case order of
+        LT ->
+            GT
+
+        EQ ->
+            EQ
+
+        GT ->
+            LT
+
+
+{-| Sort by XP, descending order
+-}
+playerRanking : ClientOtherPlayer -> ClientOtherPlayer -> Order
+playerRanking a b =
+    compare a.xp b.xp
+        |> reverseOrder
 
 
 type alias WithPlayer a =
