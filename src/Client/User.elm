@@ -292,6 +292,18 @@ viewCredentialsForm c { name, password } maybeMessage =
                     Just "Name must not be empty"
                   else
                     Nothing
+                , if String.length name < 3 then
+                    Just "Name must be 3 or more characters long"
+                  else
+                    Nothing
+                , if String.length name > 20 then
+                    Just "Name must be 20 or less characters long"
+                  else
+                    Nothing
+                , if String.any (not << Char.isAlphaNum) name then
+                    Just "Name must be letters or numbers only"
+                  else
+                    Nothing
                 , if String.length (Shared.Password.unwrapPlaintext password) < 5 then
                     Just "Password must be 5 or more characters long"
                   else
