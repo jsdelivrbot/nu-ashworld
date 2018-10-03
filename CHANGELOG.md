@@ -2,7 +2,7 @@
 
 - [x] XP per fight is determined by the player HP (multiplier?)
 - [x] Fight result is not "You won / You lost" but the final HP etc.
-- [x] Show players AP (when fiddling with SPECIAL?) and what it means (1/2/3 punches per fight turn)
+- [x] Show helpful descriptions of SPECIAL
 - [x] Truncate game messages to 50 last messages or "what's new" (if that's >50)
 - [x] Anti-spam measures for the signup form
 - [x] Game logs (API requests) saved to SQL
