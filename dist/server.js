@@ -13,7 +13,7 @@ const db = new pg.Client({connectionString: dbConnectionString});
 (async () => {
 
     await db.connect();
-    await createDbTableIfNeeded();
+    await createDbTablesIfNeeded();
     const persistedData = await getPersistedData();
 
     const app = Elm.Server.Main.init({
@@ -29,13 +29,16 @@ const db = new pg.Client({connectionString: dbConnectionString});
           await persistData(stringifiedData);
       });
 
-      app.ports.httpResponse.subscribe(([response, responseString]) => {
-          response.writeHead(200, {
+      app.ports.httpResponse.subscribe(({res, urlPart, username, startTime, responseString}) => {
+          res.writeHead(200, {
               'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': cors,
               'Access-Control-Allow-Headers': 'X-Username,X-Hashed-Password',
           });
-          response.end(responseString);
+          res.end(responseString);
+          const elapsedTime = process.hrtime(startTime);
+          const elapsedUs = Math.round(elapsedTime[0] * 1000000 + elapsedTime[1] / 1000);
+          logRequest({ elapsedUs, urlPart, username });
       });
 
       http.createServer((request, response) => {
@@ -49,6 +52,8 @@ const db = new pg.Client({connectionString: dbConnectionString});
 
           } else {
 
+            const startTime = process.hrtime();
+
             const fromPlayer = request.headers['x-username']
               ? ` from ${request.headers['x-username']}`
               : '';
@@ -57,7 +62,9 @@ const db = new pg.Client({connectionString: dbConnectionString});
             
             app.ports.httpRequests.send({
                 url: `${host}:${port}${request.url}`,
-                response,
+                urlPart: request.url,
+                res: response,
+                startTime,
                 headers: request.headers,
             });
 
@@ -79,8 +86,15 @@ const persistData = (dataString) => db.query(
     [dataString]
 );
 
-const createDbTableIfNeeded = (dataString) => db.query(`
+const createDbTablesIfNeeded = (dataString) => db.query(`
   CREATE TABLE IF NOT EXISTS persistence(id NUMERIC UNIQUE, data TEXT);
   INSERT INTO persistence(id, data) VALUES(0, NULL) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data
     WHERE NOT EXISTS (SELECT * FROM persistence);
+
+  CREATE TABLE IF NOT EXISTS log(timestamp TIMESTAMP, url TEXT, username TEXT, elapsed_time_us INTEGER);
 `);
+
+const logRequest = ({ urlPart, username, elapsedUs }) => db.query(
+  'INSERT INTO log(timestamp, url, username, elapsed_time_us) VALUES(NOW(), $1, $2, $3);',
+  [urlPart, username, elapsedUs]
+);

@@ -4,6 +4,7 @@ module Client.User
         , Form
         , LoggedInUser
         , User(..)
+        , dropMessages
         , formToAuth
         , getAuthFromForm
         , getAuthFromUser
@@ -17,6 +18,7 @@ module Client.User
         , mapLoggedOffWorld
         , signingUpError
         , transitionFromLoggedOff
+        , truncateMessages
         , unknownError
         , viewLoggedIn
         , viewLoggedOff
@@ -290,6 +292,18 @@ viewCredentialsForm c { name, password } maybeMessage =
                     Just "Name must not be empty"
                   else
                     Nothing
+                , if String.length name < 3 then
+                    Just "Name must be 3 or more characters long"
+                  else
+                    Nothing
+                , if String.length name > 20 then
+                    Just "Name must be 20 or less characters long"
+                  else
+                    Nothing
+                , if String.any (not << Char.isAlphaNum) name then
+                    Just "Name must be letters or numbers only"
+                  else
+                    Nothing
                 , if String.length (Shared.Password.unwrapPlaintext password) < 5 then
                     Just "Password must be 5 or more characters long"
                   else
@@ -432,6 +446,11 @@ viewPlayer c player =
                      else
                         []
                     )
+                , H.td []
+                    [ Shared.Special.hint attr
+                        |> Maybe.withDefault ""
+                        |> H.text
+                    ]
                 ]
     in
     H.table []
@@ -439,15 +458,18 @@ viewPlayer c player =
             [ H.td [] []
             , H.th [] [ H.text "PLAYER STATS" ]
             , H.td [] []
+            , H.td [] []
             ]
         , H.tr []
             [ H.th [] [ H.text "Name" ]
             , H.td [] [ H.text player.name ]
             , H.td [] []
+            , H.td [] []
             ]
         , H.tr []
             [ H.th [] [ H.text "HP" ]
             , H.td [] [ H.text (String.fromInt player.hp ++ "/" ++ String.fromInt player.maxHp) ]
+            , H.td [] []
             , H.td [] []
             ]
         , H.tr []
@@ -461,10 +483,12 @@ viewPlayer c player =
                         ++ String.fromInt (Shared.Level.xpToNextLevel player.xp)
                         ++ " till the next level)"
                 ]
+            , H.td [] []
             ]
         , H.tr []
-            [ H.td [] []
-            , H.th [ HA.colspan 2 ] [ H.text ("SPECIAL (" ++ String.fromInt player.availableSpecial ++ " pts available)") ]
+            [ H.th [ HA.colspan 2 ] [ H.text ("SPECIAL (" ++ String.fromInt player.availableSpecial ++ " pts available)") ]
+            , H.td [] []
+            , H.td [] []
             ]
         , viewSpecialAttr Strength
         , viewSpecialAttr Perception
@@ -494,9 +518,31 @@ viewPlayers { players } =
                     , H.th [] [ H.text "Level" ]
                     , H.th [] []
                     ]
-                    :: List.map viewOtherPlayerAnonymous players
+                    :: List.map viewOtherPlayerAnonymous
+                        (List.sortWith playerRanking players)
                 )
         ]
+
+
+reverseOrder : Order -> Order
+reverseOrder order =
+    case order of
+        LT ->
+            GT
+
+        EQ ->
+            EQ
+
+        GT ->
+            LT
+
+
+{-| Sort by XP, descending order
+-}
+playerRanking : ClientOtherPlayer -> ClientOtherPlayer -> Order
+playerRanking a b =
+    compare a.xp b.xp
+        |> reverseOrder
 
 
 type alias WithPlayer a =
@@ -521,7 +567,8 @@ viewOtherPlayers c { player, otherPlayers } =
                     , H.th [] [ H.text "Level" ]
                     , H.th [] []
                     ]
-                    :: List.map (viewOtherPlayer c player) otherPlayers
+                    :: List.map (viewOtherPlayer c player)
+                        (List.sortWith playerRanking otherPlayers)
                 )
         ]
 
@@ -551,3 +598,24 @@ viewOtherPlayerAnonymous { name, hp, xp } =
         , H.td [] [ H.text (String.fromInt hp) ]
         , H.td [] [ H.text (String.fromInt (Shared.Level.levelForXp xp)) ]
         ]
+
+
+dropMessages : LoggedInUser -> LoggedInUser
+dropMessages user =
+    { user | messages = [] }
+
+
+truncateMessages : LoggedInUser -> LoggedInUser
+truncateMessages ({ messages } as user) =
+    let
+        amountToDrop : Int
+        amountToDrop =
+            (List.length messages - messageLimit)
+                |> max 0
+    in
+    { user | messages = List.drop amountToDrop messages }
+
+
+messageLimit : Int
+messageLimit =
+    50

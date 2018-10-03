@@ -40,11 +40,18 @@ port httpRequests : (JE.Value -> msg) -> Sub msg
 port httpResponse : JE.Value -> Cmd msg
 
 
-sendHttpResponse : JE.Value -> JE.Value -> Cmd msg
-sendHttpResponse response value =
-    JE.list identity
-        [ response
-        , JE.string (JE.encode 0 value)
+sendHttpResponse : HttpResponseData -> Cmd msg
+sendHttpResponse { res, urlPart, username, startTime, responseString } =
+    JE.object
+        [ ( "res", res )
+        , ( "urlPart", JE.string urlPart )
+        , ( "username"
+          , username
+                |> Maybe.map JE.string
+                |> Maybe.withDefault JE.null
+          )
+        , ( "startTime", startTime )
+        , ( "responseString", JE.string responseString )
         ]
         |> httpResponse
 
@@ -73,13 +80,24 @@ type Msg
     = HealTick Posix
     | HttpRequest HttpRequestData
     | HttpRequestError JD.Error
-    | GeneratedFight ( JE.Value, Maybe FightData )
+    | GeneratedFight ( JE.Value -> Cmd Msg, Maybe FightData )
 
 
 type alias HttpRequestData =
     { url : String
-    , response : JE.Value
+    , urlPart : String
+    , res : JE.Value
+    , startTime : JE.Value
     , headers : Dict String String
+    }
+
+
+type alias HttpResponseData =
+    { res : JE.Value
+    , startTime : JE.Value
+    , urlPart : String
+    , username : Maybe String
+    , responseString : String
     }
 
 
@@ -131,34 +149,50 @@ updateWithPersist msg model =
     )
 
 
+toResponseCmd : HttpRequestData -> JE.Value -> Cmd Msg
+toResponseCmd { urlPart, res, startTime, headers } response =
+    sendHttpResponse
+        { res = res
+        , startTime = startTime
+        , urlPart = urlPart
+        , username = headers |> Dict.get "x-username"
+        , responseString = JE.encode 0 response
+        }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        HttpRequest { url, response, headers } ->
+        HttpRequest ({ url, res, headers, startTime } as request) ->
+            let
+                toResponse : JE.Value -> Cmd Msg
+                toResponse =
+                    toResponseCmd request
+            in
             case Route.fromString url of
                 NotFound ->
-                    handleNotFound url response model
+                    handleNotFound url toResponse model
 
                 Signup ->
-                    handleSignup (authHeaders headers) response model
+                    handleSignup (authHeaders headers) toResponse model
 
                 Login ->
-                    handleLogin (authHeaders headers) response model
+                    handleLogin (authHeaders headers) toResponse model
 
                 Logout ->
-                    handleLogout response model
+                    handleLogout toResponse model
 
                 Refresh ->
-                    handleRefresh (authHeaders headers) response model
+                    handleRefresh (authHeaders headers) toResponse model
 
                 RefreshAnonymous ->
-                    handleRefreshAnonymous response model
+                    handleRefreshAnonymous toResponse model
 
                 Attack attackData ->
-                    handleAttack (authHeaders headers) attackData response model
+                    handleAttack (authHeaders headers) attackData toResponse model
 
                 IncSpecialAttr attr ->
-                    handleIncSpecialAttr (authHeaders headers) attr response model
+                    handleIncSpecialAttr (authHeaders headers) attr toResponse model
 
         HttpRequestError error ->
             handleHttpRequestError error model
@@ -226,26 +260,27 @@ getMessageQueue name model =
     ( newModel, queue )
 
 
-handleNotFound : String -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleNotFound url response model =
+handleNotFound : String -> (JE.Value -> Cmd Msg) -> Model -> ( Model, Cmd Msg )
+handleNotFound url toResponse model =
     ( model
     , Cmd.batch
         [ log ("NotFound: " ++ url)
-        , sendHttpResponse response (Route.handlers.notFound.encode url)
+        , Route.handlers.notFound.encode url
+            |> toResponse
         ]
     )
 
 
-handleSignup : Maybe (Auth Hashed) -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleSignup maybeAuth response model =
+handleSignup : Maybe (Auth Hashed) -> (JE.Value -> Cmd Msg) -> Model -> ( Model, Cmd Msg )
+handleSignup maybeAuth toResponse model =
     maybeAuth
         |> Maybe.map Shared.Password.verify
         |> Maybe.map
             (\{ name, password } ->
                 if nameExists name model.world then
                     ( model
-                    , sendHttpResponse response
-                        (Route.handlers.signup.encodeError NameAlreadyExists)
+                    , Route.handlers.signup.encodeError NameAlreadyExists
+                        |> toResponse
                     )
                 else
                     let
@@ -267,20 +302,20 @@ handleSignup maybeAuth response model =
                             getMessageQueue name modelWithPlayer
                     in
                     ( newModel
-                    , sendHttpResponse response
-                        (case Route.handlers.signup.response messageQueue name newModel.world of
-                            Ok signupResponse ->
-                                Route.handlers.signup.encode signupResponse
+                    , (case Route.handlers.signup.response messageQueue name newModel.world of
+                        Ok signupResponse ->
+                            Route.handlers.signup.encode signupResponse
 
-                            Err signupError ->
-                                Route.handlers.signup.encodeError signupError
-                        )
+                        Err signupError ->
+                            Route.handlers.signup.encodeError signupError
+                      )
+                        |> toResponse
                     )
             )
         |> Maybe.withDefault
             ( model
-            , sendHttpResponse response
-                (Route.handlers.signup.encodeError (AuthError AuthenticationHeadersMissing))
+            , Route.handlers.signup.encodeError (AuthError AuthenticationHeadersMissing)
+                |> toResponse
             )
 
 
@@ -292,8 +327,8 @@ nameExists name world =
         |> not
 
 
-handleLogin : Maybe (Auth Hashed) -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleLogin maybeAuth response model =
+handleLogin : Maybe (Auth Hashed) -> (JE.Value -> Cmd Msg) -> Model -> ( Model, Cmd Msg )
+handleLogin maybeAuth toResponse model =
     maybeAuth
         |> Maybe.map
             (\auth ->
@@ -303,35 +338,35 @@ handleLogin maybeAuth response model =
                             getMessageQueue auth.name model
                     in
                     ( newModel
-                    , sendHttpResponse response
-                        (Route.handlers.login.response messageQueue auth.name newModel.world
-                            |> Maybe.map Route.handlers.login.encode
-                            |> Maybe.withDefault (Route.handlers.login.encodeError NameAndPasswordDoesntCheckOut)
-                        )
+                    , Route.handlers.login.response messageQueue auth.name newModel.world
+                        |> Maybe.map Route.handlers.login.encode
+                        |> Maybe.withDefault (Route.handlers.login.encodeError NameAndPasswordDoesntCheckOut)
+                        |> toResponse
                     )
                 else
                     ( model
-                    , sendHttpResponse response (Route.handlers.login.encodeError NameAndPasswordDoesntCheckOut)
+                    , Route.handlers.login.encodeError NameAndPasswordDoesntCheckOut
+                        |> toResponse
                     )
             )
         |> Maybe.withDefault
             ( model
-            , sendHttpResponse response (Route.handlers.login.encodeError AuthenticationHeadersMissing)
+            , Route.handlers.login.encodeError AuthenticationHeadersMissing
+                |> toResponse
             )
 
 
-handleLogout : JE.Value -> Model -> ( Model, Cmd Msg )
-handleLogout response model =
+handleLogout : (JE.Value -> Cmd Msg) -> Model -> ( Model, Cmd Msg )
+handleLogout toResponse model =
     ( model
-    , sendHttpResponse response
-        (Route.handlers.logout.response model.world
-            |> Route.handlers.logout.encode
-        )
+    , Route.handlers.logout.response model.world
+        |> Route.handlers.logout.encode
+        |> toResponse
     )
 
 
-handleRefresh : Maybe (Auth Hashed) -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleRefresh maybeAuth response model =
+handleRefresh : Maybe (Auth Hashed) -> (JE.Value -> Cmd Msg) -> Model -> ( Model, Cmd Msg )
+handleRefresh maybeAuth toResponse model =
     maybeAuth
         |> Maybe.map
             (\auth ->
@@ -341,35 +376,35 @@ handleRefresh maybeAuth response model =
                             getMessageQueue auth.name model
                     in
                     ( newModel
-                    , sendHttpResponse response
-                        (Route.handlers.refresh.response messageQueue auth.name newModel.world
-                            |> Maybe.map Route.handlers.refresh.encode
-                            |> Maybe.withDefault (Route.handlers.refresh.encodeError NameNotFound)
-                        )
+                    , Route.handlers.refresh.response messageQueue auth.name newModel.world
+                        |> Maybe.map Route.handlers.refresh.encode
+                        |> Maybe.withDefault (Route.handlers.refresh.encodeError NameNotFound)
+                        |> toResponse
                     )
                 else
                     ( model
-                    , sendHttpResponse response (Route.handlers.refresh.encodeError NameAndPasswordDoesntCheckOut)
+                    , Route.handlers.refresh.encodeError NameAndPasswordDoesntCheckOut
+                        |> toResponse
                     )
             )
         |> Maybe.withDefault
             ( model
-            , sendHttpResponse response (Route.handlers.refresh.encodeError AuthenticationHeadersMissing)
+            , Route.handlers.refresh.encodeError AuthenticationHeadersMissing
+                |> toResponse
             )
 
 
-handleRefreshAnonymous : JE.Value -> Model -> ( Model, Cmd Msg )
-handleRefreshAnonymous response model =
+handleRefreshAnonymous : (JE.Value -> Cmd Msg) -> Model -> ( Model, Cmd Msg )
+handleRefreshAnonymous toResponse model =
     ( model
-    , sendHttpResponse response
-        (Route.handlers.refreshAnonymous.response model.world
-            |> Route.handlers.refreshAnonymous.encode
-        )
+    , Route.handlers.refreshAnonymous.response model.world
+        |> Route.handlers.refreshAnonymous.encode
+        |> toResponse
     )
 
 
-handleAttack : Maybe (Auth Hashed) -> String -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleAttack maybeAuth them response ({ world } as model) =
+handleAttack : Maybe (Auth Hashed) -> String -> (JE.Value -> Cmd Msg) -> Model -> ( Model, Cmd Msg )
+handleAttack maybeAuth them toResponse ({ world } as model) =
     maybeAuth
         |> Maybe.map
             (\auth ->
@@ -380,24 +415,26 @@ handleAttack maybeAuth them response ({ world } as model) =
                 in
                 if Shared.Password.checksOut auth world.players then
                     if Server.World.isDead you world then
-                        handleAttackYouDead you response model
+                        handleAttackYouDead you toResponse model
                     else if Server.World.isDead them world then
-                        handleAttackThemDead you them response model
+                        handleAttackThemDead you them toResponse model
                     else
-                        handleAttackNobodyDead you them response model
+                        handleAttackNobodyDead you them toResponse model
                 else
                     ( model
-                    , sendHttpResponse response (Route.handlers.attack.encodeError NameAndPasswordDoesntCheckOut)
+                    , Route.handlers.attack.encodeError NameAndPasswordDoesntCheckOut
+                        |> toResponse
                     )
             )
         |> Maybe.withDefault
             ( model
-            , sendHttpResponse response (Route.handlers.attack.encodeError AuthenticationHeadersMissing)
+            , Route.handlers.attack.encodeError AuthenticationHeadersMissing
+                |> toResponse
             )
 
 
-handleIncSpecialAttr : Maybe (Auth Hashed) -> SpecialAttr -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleIncSpecialAttr maybeAuth attr response model =
+handleIncSpecialAttr : Maybe (Auth Hashed) -> SpecialAttr -> (JE.Value -> Cmd Msg) -> Model -> ( Model, Cmd Msg )
+handleIncSpecialAttr maybeAuth attr toResponse model =
     maybeAuth
         |> Maybe.map
             (\auth ->
@@ -442,22 +479,21 @@ handleIncSpecialAttr maybeAuth attr response model =
                             |> Maybe.withDefault (getMessageQueue auth.name model)
                 in
                 ( newModel
-                , sendHttpResponse response
-                    (Route.handlers.incSpecialAttr.response newMessageQueue auth.name newModel.world
-                        |> Maybe.map Route.handlers.incSpecialAttr.encode
-                        |> Maybe.withDefault (Route.handlers.incSpecialAttr.encodeError NameNotFound)
-                    )
+                , Route.handlers.incSpecialAttr.response newMessageQueue auth.name newModel.world
+                    |> Maybe.map Route.handlers.incSpecialAttr.encode
+                    |> Maybe.withDefault (Route.handlers.incSpecialAttr.encodeError NameNotFound)
+                    |> toResponse
                 )
             )
         |> Maybe.withDefault
             ( model
-            , sendHttpResponse response
-                (Route.handlers.incSpecialAttr.encodeError AuthenticationHeadersMissing)
+            , Route.handlers.incSpecialAttr.encodeError AuthenticationHeadersMissing
+                |> toResponse
             )
 
 
-handleAttackYouDead : String -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleAttackYouDead you response model =
+handleAttackYouDead : String -> (JE.Value -> Cmd Msg) -> Model -> ( Model, Cmd Msg )
+handleAttackYouDead you toResponse model =
     let
         ( modelWithoutMessages, messageQueue ) =
             getMessageQueue you model
@@ -467,16 +503,15 @@ handleAttackYouDead you response model =
             messageQueue ++ [ "You are dead, you can't fight." ]
     in
     ( modelWithoutMessages
-    , sendHttpResponse response
-        (Route.handlers.attack.response newMessageQueue you modelWithoutMessages.world Nothing
-            |> Maybe.map Route.handlers.attack.encode
-            |> Maybe.withDefault (Route.handlers.attack.encodeError NameNotFound)
-        )
+    , Route.handlers.attack.response newMessageQueue you modelWithoutMessages.world Nothing
+        |> Maybe.map Route.handlers.attack.encode
+        |> Maybe.withDefault (Route.handlers.attack.encodeError NameNotFound)
+        |> toResponse
     )
 
 
-handleAttackThemDead : String -> String -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleAttackThemDead you them response model =
+handleAttackThemDead : String -> String -> (JE.Value -> Cmd Msg) -> Model -> ( Model, Cmd Msg )
+handleAttackThemDead you them toResponse model =
     let
         ( modelWithoutMessages, messageQueue ) =
             getMessageQueue you model
@@ -486,19 +521,18 @@ handleAttackThemDead you them response model =
             messageQueue ++ [ "They are dead already. There's nothing else for you to do." ]
     in
     ( modelWithoutMessages
-    , sendHttpResponse response
-        (Route.handlers.attack.response newMessageQueue you modelWithoutMessages.world Nothing
-            |> Maybe.map Route.handlers.attack.encode
-            |> Maybe.withDefault (Route.handlers.attack.encodeError NameNotFound)
-        )
+    , Route.handlers.attack.response newMessageQueue you modelWithoutMessages.world Nothing
+        |> Maybe.map Route.handlers.attack.encode
+        |> Maybe.withDefault (Route.handlers.attack.encodeError NameNotFound)
+        |> toResponse
     )
 
 
-handleAttackNobodyDead : String -> String -> JE.Value -> Model -> ( Model, Cmd Msg )
-handleAttackNobodyDead you them response model =
+handleAttackNobodyDead : String -> String -> (JE.Value -> Cmd Msg) -> Model -> ( Model, Cmd Msg )
+handleAttackNobodyDead you them toResponse model =
     ( model
     , Random.generate
-        (\fight -> GeneratedFight ( response, fight ))
+        (\fight -> GeneratedFight ( toResponse, fight ))
         (fightDataGenerator you them model)
     )
 
@@ -532,8 +566,8 @@ fightDataGenerator yourName theirName model =
         |> Maybe.withDefault (Random.constant Nothing)
 
 
-handleAttackWithGeneratedFight : ( JE.Value, Maybe FightData ) -> Model -> ( Model, Cmd Msg )
-handleAttackWithGeneratedFight ( response, maybeFightData ) model =
+handleAttackWithGeneratedFight : ( JE.Value -> Cmd Msg, Maybe FightData ) -> Model -> ( Model, Cmd Msg )
+handleAttackWithGeneratedFight ( toResponse, maybeFightData ) model =
     maybeFightData
         |> Maybe.map
             (\{ you, them, fight } ->
@@ -578,16 +612,16 @@ handleAttackWithGeneratedFight ( response, maybeFightData ) model =
                         getMessageQueue you modelAfterFight
                 in
                 ( newModel
-                , sendHttpResponse response
-                    (Route.handlers.attack.response messageQueue you newModel.world (Just fight)
-                        |> Maybe.map Route.handlers.attack.encode
-                        |> Maybe.withDefault (Route.handlers.attack.encodeError NameNotFound)
-                    )
+                , Route.handlers.attack.response messageQueue you newModel.world (Just fight)
+                    |> Maybe.map Route.handlers.attack.encode
+                    |> Maybe.withDefault (Route.handlers.attack.encodeError NameNotFound)
+                    |> toResponse
                 )
             )
         |> Maybe.withDefault
             ( model
-            , sendHttpResponse response (Route.handlers.attack.encodeError NameNotFound)
+            , Route.handlers.attack.encodeError NameNotFound
+                |> toResponse
             )
 
 
@@ -633,9 +667,11 @@ subscriptions model =
 
 httpRequestDecoder : Decoder HttpRequestData
 httpRequestDecoder =
-    JD.map3 HttpRequestData
+    JD.map5 HttpRequestData
         (JD.field "url" JD.string)
-        (JD.field "response" JD.value)
+        (JD.field "urlPart" JD.string)
+        (JD.field "res" JD.value)
+        (JD.field "startTime" JD.value)
         (JD.field "headers" (EJ.dictFromObject JD.string))
 
 
