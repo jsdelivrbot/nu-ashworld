@@ -15,11 +15,13 @@ It is still very much in flux and less-than-alpha quality. Expect whatever progr
 - [ ] Ticks, capped, once per ... what, an hour? (ENV flag to make it go faster for debug/testing purposes?)
 - [ ] HP [is determined by](http://fallout.wikia.com/wiki/Hit_Points#Fallout_and_Fallout_2) level + strength + endurance
 - [ ] Visibility of some "next tick in/at ..." information
+- [ ] Auth through cookies / JWT / Auth0 / ..., don't send credentials on each request
+- [ ] Be a bit more REST-like: mutations only through POST, not GET, etc
+- [ ] Send deltas instead of full world states
 - [ ] Design (that Adminator bootstrap template looks nice, but it's 1MB, blah. Do it myself? And in black/green FO2 theme? And with FO2 fonts? YESSS)
 - [ ] Move to full-fledged SQL before the current style gets unwieldy
 - [ ] Anti-spam measures on server-side too
 - [ ] Migrations between DB states
-- [ ] Send deltas instead of full world states
 - [ ] Skills
 - [ ] Skills influence fight (and SPECIAL influences it too, a bit more than it does currently)
 - [ ] Timestamps in the messages
