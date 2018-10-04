@@ -1,6 +1,35 @@
+/*
+ * COLORS:
+ *
+ * from this screenshot: http://static.gosunoob.com/img/1/2015/11/hot-rodder-magazine-fallout-4-location-map.jpg
+ * ---------------------
+ * green-darkest:   #111810;
+ * green-middle:    #103b0e;
+ * green-bright:    #2b602a;
+ * green-brightest: #1afb0b;
+ *
+ * from this screenshot: http://static.gosunoob.com/img/1/2015/11/hot-rodder-magazine-fallout-4.jpg
+ * ---------------------
+ * green-dark:      #033405;
+ * green-bright:    #24be2a;
+ * green-brightest: #08f81b;
+ *
+ * syntax highlighting scheme: https://packagecontrol.io/readmes/img/30cf146419a69c20f4a2300c21226d3baab75974.png
+ * ---------------------------
+ * https://github.com/tonylegrone/terminal-sublime/blob/master/Green.tmTheme
+ *
+ * maybe try some of these:
+ * ------------------------
+ * https://www.italiamac.it/wp-content/uploads/2016/06/retro-terminal-mac-screenshots-1-620x426.jpg
+ * http://3.bp.blogspot.com/-Qgtf9metkNE/UX6vUqtnyZI/AAAAAAAAEWA/oiiAqgpgVDo/s1600/Screen+Shot+2013-04-29+at+9.00.39+AM.png
+ * https://lh5.googleusercontent.com/-h93-y22UlHI/VEvuoGJdUSI/AAAAAAAAKi0/oy7OJCexFZA/s1600/cool-retro-term-3.jpg
+ * https://packagecontrol.io/readmes/img/30cf146419a69c20f4a2300c21226d3baab75974.png
+ * http://cdn.osxdaily.com/wp-content/uploads/2011/01/cathode-full-screen.jpg
+ */
+
 body {
   margin: 0;
 
-  background-color: #253447;
-  color: #fafafa;
+  background-color: #111810;
+  color: #1afb0b;
 }
