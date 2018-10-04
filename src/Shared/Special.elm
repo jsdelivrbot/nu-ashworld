@@ -69,7 +69,7 @@ label attr =
             "Charisma"
 
         Intelligence ->
-            "intelligence"
+            "Intelligence"
 
         Agility ->
             "Agility"

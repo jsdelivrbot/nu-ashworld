@@ -1,3 +1,7 @@
+# 0.1.2 - ????/??/??
+
+- [x] Fix "intelligence" SPECIAL stat from lowercase to titlecase
+
 # 0.1.1 - 2018/10/04
 
 - [x] XP per fight is determined by the player HP (multiplier?)
