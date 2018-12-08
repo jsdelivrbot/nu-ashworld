@@ -2,7 +2,7 @@
   "name": "NuAshworld",
   "description": "A Fallout-themed PBBG game",
   "repository": "https://github.com/Janiczek/nu-ashworld",
-  "logo": "https://cdn.rawgit.com/heroku/node-js-getting-started/master/public/node.svg",
+  "logo": "https://cdn.jsdelivr.net/gh/heroku/node-js-getting-started/public/node.svg",
   "keywords": ["game"],
   "image": "heroku/nodejs"
 }
